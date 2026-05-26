@@ -1,8 +1,7 @@
-﻿import { StationCard } from "./StationItem";
-import type {
-  LandStationPrice,
-  MaritimeStationPrice,
-} from "../../models/stations.model";
+﻿import { useEffect, useLayoutEffect, useState, useMemo, useRef } from "react";
+import { useWindowVirtualizer } from "@tanstack/react-virtual";
+import { StationCard } from "./StationItem";
+import type { LandStationPrice, MaritimeStationPrice } from "../../models/stations.model";
 
 interface ApiResponse {
   Fecha: string;
@@ -11,17 +10,66 @@ interface ApiResponse {
   ResultadoConsulta: string;
 }
 
-type props = {
+interface StationsListProps {
   loading: boolean;
   error: Error | null;
   stations: ApiResponse | undefined;
   isMarine: boolean;
+}
+
+const getStationId = (station: LandStationPrice | MaritimeStationPrice): string => {
+  return "IDPosteMaritimo" in station ? station.IDPosteMaritimo : station.IDEESS;
 };
 
-export const StationsList = ({ loading, error, stations, isMarine }: props) => {
+const useResponsiveColumns = () => {
+  const [columns, setColumns] = useState(1);
+
+  useEffect(() => {
+    const updateColumns = () => {
+      if (window.innerWidth >= 1280) setColumns(3);
+      else if (window.innerWidth >= 768) setColumns(2);
+      else setColumns(1);
+    };
+
+    updateColumns();
+    window.addEventListener("resize", updateColumns);
+    return () => window.removeEventListener("resize", updateColumns);
+  }, []);
+
+  return columns;
+};
+
+export const StationsList = ({ loading, error, stations, isMarine }: StationsListProps) => {
+  const columns = useResponsiveColumns();
+  const listRef = useRef<HTMLDivElement | null>(null);
+  const listOffsetRef = useRef(0);
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const rawStations = stations?.ListaEESSPrecio || [];
+
+  const chunkedStations = useMemo(() => {
+    const chunks = [];
+    for (let i = 0; i < rawStations.length; i += columns) {
+      chunks.push(rawStations.slice(i, i + columns));
+    }
+    return chunks;
+  }, [rawStations, columns]);
+
+  useLayoutEffect(() => {
+    listOffsetRef.current = listRef.current?.offsetTop ?? 0;
+  }, [stations]);
+
+  // 3. Virtualizador con la referencia síncrona
+  const virtualizer = useWindowVirtualizer({
+    count: chunkedStations.length,
+    estimateSize: () => 280,
+    overscan: 3,
+    // eslint-disable-next-line react-hooks/refs
+    scrollMargin: listOffsetRef.current,
+  });
+
   return (
     <>
-      {/* Estados de Carga y Error */}
       {loading && (
         <div className="flex flex-col justify-center items-center py-20 gap-4">
           <span className="loading loading-bars loading-lg text-primary"></span>
@@ -33,18 +81,8 @@ export const StationsList = ({ loading, error, stations, isMarine }: props) => {
 
       {error && (
         <div className="alert alert-error shadow-lg max-w-2xl mx-auto rounded-2xl">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="stroke-current shrink-0 h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
+          <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <div>
             <h3 className="font-bold">Error de conexión</h3>
@@ -54,32 +92,55 @@ export const StationsList = ({ loading, error, stations, isMarine }: props) => {
       )}
 
       {stations && (
-        <div className="fade-in">
+        <div className="fade-in pb-12">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6 pl-2">
             <h2 className="text-xl font-bold text-base-content flex items-center gap-3">
-              <span
-                className={`${isMarine ? "bg-info" : "bg-primary"} w-1.5 h-6 rounded-full inline-block`}
-              ></span>
-              <span>{stations.ListaEESSPrecio?.length || 0} Estaciones</span>
+              <span className={`${isMarine ? "bg-info" : "bg-primary"} w-1.5 h-6 rounded-full inline-block`}></span>
+              <span>{rawStations.length} Estaciones</span>
             </h2>
-
             <span className="text-xs font-medium text-base-content/60 sm:text-right">
               Actualizado: {stations.Fecha}
             </span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {stations.ListaEESSPrecio?.slice(0, 10).map((station, index) => (
-              <StationCard
-                key={
-                  isMarine
-                    ? (station as MaritimeStationPrice).IDPosteMaritimo
-                    : (station as LandStationPrice).IDEESS || index
-                }
-                station={station}
-                type={isMarine ? "marine" : "land"}
-              />
-            ))}
+          {/* 4. Contenedor de la lista referenciado */}
+          <div ref={listRef} className="w-full">
+            <div
+              style={{
+                height: `${virtualizer.getTotalSize()}px`,
+                width: "100%",
+                position: "relative",
+              }}
+            >
+              {virtualizer.getVirtualItems().map((virtualRow) => {
+                const rowStations = chunkedStations[virtualRow.index];
+
+                return (
+                  <div
+                    key={virtualRow.index}
+                    ref={virtualizer.measureElement}
+                    data-index={virtualRow.index}
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      width: "100%",
+                      // 5. Restamos el margen tal como indica la documentación
+                      transform: `translateY(${virtualRow.start - virtualizer.options.scrollMargin}px)`,
+                    }}
+                    className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"
+                  >
+                    {rowStations.map((station) => (
+                      <StationCard
+                        key={getStationId(station)}
+                        station={station}
+                        type={isMarine ? "marine" : "land"}
+                      />
+                    ))}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       )}

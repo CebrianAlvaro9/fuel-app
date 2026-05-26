@@ -2,8 +2,8 @@ import { useState } from "react";
 import { useFiltersData } from "../../hooks/useFiltersData";
 import type { FilterState } from "../../models/filters.model";
 import { SelectFilter } from "./SelectFilter";
-import { ToggleStationType } from "./toggleStationType";
 import { DayPicker } from "react-day-picker";
+import { ToggleStationType } from "./ToggleStationType";
 
 interface FiltersProps {
   filters: FilterState;

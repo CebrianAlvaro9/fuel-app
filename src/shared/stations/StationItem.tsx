@@ -14,7 +14,7 @@ export const StationCard = ({ station, type }: StationCardProps) => {
 
   return (
     <div
-      className={`card shadow-sm border rounded-3xl hover:shadow-xl hover:border-primary/30 transition-all duration-300 group ${
+      className={`card shadow-sm mb-6 border rounded-3xl hover:shadow-xl hover:border-primary/30 transition-all duration-300 group ${
         isLand
           ? 'bg-base-100 border-base-200'
           : 'bg-base-100 border-info/30'
