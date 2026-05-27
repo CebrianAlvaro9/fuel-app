@@ -135,10 +135,11 @@ export const Filters = ({ filters, onChange, setLocation }: FiltersProps) => {
             isLoading={loaders.isLoadingPetrols}
             options={options.petrols}
           />
-          <div className="items-center w-full md:w-auto flex gap-6 px-2">
-            <span className="text-sm md:hidden">Fecha:</span>
-            <DatePicker date={date} setDate={setDate} onChange={onChange} />
-          </div>
+          { !filters.isMarine &&
+            <div className="items-center w-full md:w-auto flex gap-6 px-2">
+              <span className="text-sm md:hidden">Fecha:</span>
+              <DatePicker date={date} setDate={setDate} onChange={onChange} />
+            </div>}
         </div>
       </div>
     </div>
