@@ -2,20 +2,22 @@ import { useState } from "react";
 import { useFiltersData } from "../../hooks/useFiltersData";
 import type { FilterState } from "../../models/filters.model";
 import { SelectFilter } from "./SelectFilter";
-import { DayPicker } from "react-day-picker";
 import { ToggleStationType } from "./ToggleStationType";
+import { LocationFilter } from "./LocationFilter";
+import { DatePicker } from "./DatePicker";
+import type { Coords } from "../../models/ubi.model";
 
 interface FiltersProps {
   filters: FilterState;
   onChange: (updates: Partial<FilterState>) => void;
+  setLocation: (location: Coords | null) => void;
 }
 
-export const Filters = ({ filters, onChange }: FiltersProps) => {
+export const Filters = ({ filters, onChange, setLocation }: FiltersProps) => {
   const { options, loaders } = useFiltersData({
     communityId: filters.community,
     provinceId: filters.province,
   });
-
   const [date, setDate] = useState<Date | undefined>();
 
   const handleCommunityChange = (value: string) => {
@@ -42,26 +44,6 @@ export const Filters = ({ filters, onChange }: FiltersProps) => {
       date: "",
     });
     setDate(undefined);
-  };
-
-  const formatDateToMinisterio = (date: Date): string => {
-    const day = String(date.getDate()).padStart(2, "0");
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const year = date.getFullYear();
-
-    return `${day}-${month}-${year}`;
-  };
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const handleDateChange = (value: Date | undefined) => {
-    setDate(value);
-    if (value) {
-      const formattedDate = formatDateToMinisterio(value);
-      onChange({ date: formattedDate });
-    } else {
-      onChange({ date: "" });
-    }
   };
 
   return (
@@ -110,6 +92,8 @@ export const Filters = ({ filters, onChange }: FiltersProps) => {
               border border-base-300 md:border-none z-50
             "
         >
+          <LocationFilter setLocation={setLocation} />
+
           <SelectFilter
             placeholder="Comunidad Autónoma"
             value={filters.community}
@@ -143,29 +127,7 @@ export const Filters = ({ filters, onChange }: FiltersProps) => {
             isLoading={loaders.isLoadingPetrols}
             options={options.petrols}
           />
-
-          <button
-            popoverTarget="rdp-popover"
-            className="input input-bordered w-full h-auto md:w-auto p-1 focus:bg-base-100 disabled:opacity-50 transition-all cursor-pointer  text-sm rounded-xl flex items-center justify-center gap-2"
-            style={{ anchorName: "--rdp" } as React.CSSProperties}
-          >
-            {filters.date ? filters.date : "🗓️ Día"}
-          </button>
-
-          <div
-            popover="auto"
-            id="rdp-popover"
-            className="dropdown"
-            style={{ positionAnchor: "--rdp" } as React.CSSProperties}
-          >
-            <DayPicker
-              className="react-day-picker"
-              mode="single"
-              selected={date}
-              onSelect={handleDateChange}
-              disabled={{ after: new Date(today.getTime() - 1) }}
-            />
-          </div>
+          <DatePicker date={date} setDate={setDate} onChange={onChange} />
         </div>
       </div>
     </div>

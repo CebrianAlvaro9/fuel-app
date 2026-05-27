@@ -1,45 +1,26 @@
-﻿import { useEffect, useLayoutEffect, useState, useMemo, useRef } from "react";
+﻿import { useLayoutEffect, useMemo, useRef } from "react";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import { StationCard } from "./StationItem";
-import type { LandStationPrice, MaritimeStationPrice } from "../../models/stations.model";
-
-interface ApiResponse {
-  Fecha: string;
-  ListaEESSPrecio: (LandStationPrice | MaritimeStationPrice)[];
-  Nota: string;
-  ResultadoConsulta: string;
-}
+import type {
+  LandStationPrice,
+  MaritimeStationPrice,
+  StationsFromApi,
+} from "../../models/stations.model";
+import { useResponsiveColumns } from "../../hooks/useResponsiveColumns";
 
 interface StationsListProps {
   loading: boolean;
   error: Error | null;
-  stations: ApiResponse | undefined;
+  stations: StationsFromApi | undefined;
   isMarine: boolean;
 }
 
-const getStationId = (station: LandStationPrice | MaritimeStationPrice): string => {
-  return "IDPosteMaritimo" in station ? station.IDPosteMaritimo : station.IDEESS;
-};
-
-const useResponsiveColumns = () => {
-  const [columns, setColumns] = useState(1);
-
-  useEffect(() => {
-    const updateColumns = () => {
-      if (window.innerWidth >= 1280) setColumns(3);
-      else if (window.innerWidth >= 768) setColumns(2);
-      else setColumns(1);
-    };
-
-    updateColumns();
-    window.addEventListener("resize", updateColumns);
-    return () => window.removeEventListener("resize", updateColumns);
-  }, []);
-
-  return columns;
-};
-
-export const StationsList = ({ loading, error, stations, isMarine }: StationsListProps) => {
+export const StationsList = ({
+  loading,
+  error,
+  stations,
+  isMarine,
+}: StationsListProps) => {
   const columns = useResponsiveColumns();
   const listRef = useRef<HTMLDivElement | null>(null);
   const listOffsetRef = useRef(0);
@@ -59,7 +40,6 @@ export const StationsList = ({ loading, error, stations, isMarine }: StationsLis
     listOffsetRef.current = listRef.current?.offsetTop ?? 0;
   }, [stations]);
 
-  // 3. Virtualizador con la referencia síncrona
   const virtualizer = useWindowVirtualizer({
     count: chunkedStations.length,
     estimateSize: () => 280,
@@ -68,11 +48,19 @@ export const StationsList = ({ loading, error, stations, isMarine }: StationsLis
     scrollMargin: listOffsetRef.current,
   });
 
+  const getStationId = (
+    station: LandStationPrice | MaritimeStationPrice,
+  ): string => {
+    return "IDPosteMaritimo" in station
+      ? station.IDPosteMaritimo
+      : station.IDEESS;
+  };
+
   return (
     <>
       {loading && (
-        <div className="flex flex-col justify-center items-center py-20 gap-4">
-          <span className="loading loading-bars loading-lg text-primary"></span>
+        <div className="flex flex-col justify-center items-center py-20 gap-4 ">
+          <span className="loading loading-lg text-black loading-dots"></span>
           <span className="text-lg font-medium text-base-content/70 animate-pulse">
             Obteniendo datos del Ministerio...
           </span>
@@ -81,8 +69,18 @@ export const StationsList = ({ loading, error, stations, isMarine }: StationsLis
 
       {error && (
         <div className="alert alert-error shadow-lg max-w-2xl mx-auto rounded-2xl">
-          <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="stroke-current shrink-0 h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
           </svg>
           <div>
             <h3 className="font-bold">Error de conexión</h3>
@@ -95,15 +93,15 @@ export const StationsList = ({ loading, error, stations, isMarine }: StationsLis
         <div className="fade-in pb-12">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6 pl-2">
             <h2 className="text-xl font-bold text-base-content flex items-center gap-3">
-              <span className={`${isMarine ? "bg-info" : "bg-primary"} w-1.5 h-6 rounded-full inline-block`}></span>
+              <span
+                className={`${isMarine ? "bg-info" : "bg-emerald-600"} w-1.5 h-6 rounded-full inline-block`}
+              ></span>
               <span>{rawStations.length} Estaciones</span>
             </h2>
             <span className="text-xs font-medium text-base-content/60 sm:text-right">
               Actualizado: {stations.Fecha}
             </span>
           </div>
-
-          {/* 4. Contenedor de la lista referenciado */}
           <div ref={listRef} className="w-full">
             <div
               style={{
@@ -125,7 +123,6 @@ export const StationsList = ({ loading, error, stations, isMarine }: StationsLis
                       top: 0,
                       left: 0,
                       width: "100%",
-                      // 5. Restamos el margen tal como indica la documentación
                       transform: `translateY(${virtualRow.start - virtualizer.options.scrollMargin}px)`,
                     }}
                     className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"

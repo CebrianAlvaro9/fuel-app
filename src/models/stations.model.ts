@@ -1,10 +1,17 @@
 
+export type StationExtra = {
+  LatitudParsed?: number;
+  LongitudParsed?: number;
+  distanciaUsuarioKm?: number;
+}
+
 export type StationsFromApi = {
   Fecha: string;
-  ListaEESSPrecio: MaritimeStationPrice[] | LandStationPrice[];
+  ListaEESSPrecio: (MaritimeStationPrice | LandStationPrice | (MaritimeStationPrice & StationExtra) | (LandStationPrice & StationExtra))[];
   Nota: string;
   ResultadoConsulta: string;
 };
+
 
 export interface BaseStationPrice {
   "C.P.": string;
@@ -32,7 +39,7 @@ export interface BaseStationPrice {
   "Precio Gasolina 95 E85": string;
   "Precio Gasolina Renovable": string;
   "Precio Metanol": string;
-  "PrecioProducto":string
+  "PrecioProducto"?: string;
 }
 
 export interface LandStationPrice extends BaseStationPrice {

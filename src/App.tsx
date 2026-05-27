@@ -5,6 +5,7 @@ import { StationsList } from "./shared/stations/StationsList";
 import type { FilterState } from "./models/filters.model";
 
 import { useStationsData } from "./hooks/useStationsData";
+import type { Coords } from "./models/ubi.model";
 
 function App() {
   const [filters, setFilters] = useState<FilterState>({
@@ -15,16 +16,21 @@ function App() {
     isMarine: false,
     date: "",
   });
+  const [location, setLocation] = useState<Coords | null>(null);
 
   const updateFilters = (updates: Partial<FilterState>) => {
     setFilters((prev) => ({ ...prev, ...updates }));
   };
 
-  const { stations, isLoading, error } = useStationsData(filters);
+  const { stations, isLoading, error } = useStationsData(filters, location);
 
   return (
     <div className="min-h-screen bg-base-200 pb-12 font-sans">
-      <Filters filters={filters} onChange={updateFilters} />
+      <Filters
+        filters={filters}
+        setLocation={setLocation}
+        onChange={updateFilters}
+      />
 
       <main className="container mx-auto px-4 max-w-6xl space-y-8">
         <StationsList

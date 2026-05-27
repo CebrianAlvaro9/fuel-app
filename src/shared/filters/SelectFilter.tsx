@@ -27,7 +27,7 @@ export const SelectFilter = ({
       onChange={(e) => onChange(e.target.value)}
       disabled={disabled || isLoading}
     >
-      <option value="" disabled>
+      <option value="">
         {isLoading ? "Cargando..." : placeholder}
       </option>
       {Array.isArray(options) &&
