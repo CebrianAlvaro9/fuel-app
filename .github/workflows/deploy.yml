@@ -1,0 +1,59 @@
+# Flujo de trabajo para construir y desplegar una app Vite/React en GitHub Pages
+name: Deploy to GitHub Pages
+
+on:
+  # Se ejecuta cada vez que haces push a la rama master
+  push:
+    branches: ["master"]
+  # Te permite ejecutarlo manualmente desde la pestaña "Actions"
+  workflow_dispatch:
+
+# Otorga los permisos necesarios para que la Action publique en Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Permite solo un despliegue concurrente, saltando las colas si hay varios push seguidos
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  # Trabajo 1: Construir la aplicación
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20 # Usa la versión de Node recomendada
+          cache: 'npm' # Cambia a 'pnpm' o 'yarn' si no usas npm
+
+      - name: Instalar dependencias
+        run: npm ci # Instalación limpia de dependencias
+
+      - name: Construir el proyecto (Vite)
+        run: npm run build
+
+      - name: Subir el artefacto de Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # Vite guarda el build en la carpeta 'dist' por defecto
+          path: './dist'
+
+  # Trabajo 2: Desplegar en GitHub Pages
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    needs: build
+    runs-on: ubuntu-latest
+    name: Deploy
+    steps:
+      - name: Desplegar en GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
