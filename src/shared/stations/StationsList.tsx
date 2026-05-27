@@ -94,7 +94,7 @@ export const StationsList = ({
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6 pl-2">
             <h2 className="text-xl font-bold text-base-content flex items-center gap-3">
               <span
-                className={`${isMarine ? "bg-info" : "bg-emerald-600"} w-1.5 h-6 rounded-full inline-block`}
+                className={`${isMarine ? "bg-info" : "bg-neutral"} w-1.5 h-6 rounded-full inline-block`}
               ></span>
               <span>{rawStations.length} Estaciones</span>
             </h2>

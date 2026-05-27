@@ -14,7 +14,7 @@ export const ToggleStationType = ({
         onClick={() => onToggle(false)}
         className={`px-3 py-1.5 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all duration-200 cursor-pointer ${
           !isMarine
-            ? "bg-base-100 text-emerald-600 shadow-sm"
+            ? "bg-base-100 text-neutral shadow-sm"
             : "text-base-content/50 hover:text-base-content"
         }`}
       >

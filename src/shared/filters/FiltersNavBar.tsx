@@ -49,12 +49,18 @@ export const Filters = ({ filters, onChange, setLocation }: FiltersProps) => {
   return (
     <div className="sticky top-6 z-50 px-4 mb-12">
       <div className="relative max-w-5xl mx-auto bg-base-100/80 backdrop-blur-xl shadow-xl shadow-base-content/5 border border-base-300/50 rounded-3xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 transition-all">
-        <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-start pl-2">
-          <ToggleStationType
-            isMarine={filters.isMarine}
-            onToggle={handleToggleMarine}
-          />
 
+        <div className="flex items-center justify-between w-full md:w-auto gap-4 pl-2">
+          <div className="flex items-center gap-2">
+            <ToggleStationType
+              isMarine={filters.isMarine}
+              onToggle={handleToggleMarine}
+            />
+
+            <div className="flex items-center gap-2 md:hidden">
+              <LocationFilter setLocation={setLocation} />
+            </div>
+          </div>
           <label
             htmlFor="mobile-menu-toggle"
             className="btn btn-ghost btn-sm btn-circle text-base-content/70 md:hidden cursor-pointer"
@@ -92,7 +98,9 @@ export const Filters = ({ filters, onChange, setLocation }: FiltersProps) => {
               border border-base-300 md:border-none z-50
             "
         >
-          <LocationFilter setLocation={setLocation} />
+          <div className="hidden md:block">
+            <LocationFilter setLocation={setLocation} />
+          </div>
 
           <SelectFilter
             placeholder="Comunidad Autónoma"
@@ -127,7 +135,10 @@ export const Filters = ({ filters, onChange, setLocation }: FiltersProps) => {
             isLoading={loaders.isLoadingPetrols}
             options={options.petrols}
           />
-          <DatePicker date={date} setDate={setDate} onChange={onChange} />
+          <div className="items-center w-full md:w-auto flex gap-6 px-2">
+            <span className="text-sm md:hidden">Fecha:</span>
+            <DatePicker date={date} setDate={setDate} onChange={onChange} />
+          </div>
         </div>
       </div>
     </div>

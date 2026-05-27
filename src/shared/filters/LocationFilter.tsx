@@ -25,7 +25,7 @@ export const LocationFilter = ({
         <button
           title="Se mostraran las estaciones cercanas a tu ubicación"
           onClick={handleLocation}
-          className=" h-min px-3 py-1 rounded-xl cursor-pointer"
+          className=" h-min rounded-xl cursor-pointer"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"

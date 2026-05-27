@@ -25,8 +25,8 @@ export const StationCard = ({ station, type }: StationCardProps) => {
           <h3 className="card-title text-lg font-bold text-base-content group-hover:text-primary transition-colors">
             {station['Rótulo']}
           </h3>
-          <div className={`badge badge-outline badge-sm text-xs font-semibold uppercase tracking-wider h-auto rounded-md ${
-            isLand ? 'badge-success' : 'badge-info'
+          <div className={`badge badge-outline badge-sm text-xs  font-semibold uppercase tracking-wider h-auto rounded-md ${
+            isLand ? 'text-neutral-500' : 'badge-info'
             }`}>
             <span className="text-xs">{station['Provincia']}</span>
           </div>
