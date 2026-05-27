@@ -1,35 +1,43 @@
-# Práctica: Desarrollo de una Aplicación para Consulta de Carburantes
+# Fuel App — Consulta de Carburantes
+🌐 **Demo:** [https://cebrianalvaro9.github.io/fuel-app/](https://cebrianalvaro9.github.io/fuel-app/)
 
-**Asignatura:** Tecnologías Emergentes  
-**Fecha:** 26 de mayo de 2026  
-**Alumno:** Álvaro Cebrián Urueña  
+SPA hecha en React y TypeScript para consultar los precios de las gasolineras (terrestres y marítimas) usando la API oficial del Ministerio. 
 
----
+La idea principal es tener una herramienta rápida para encontrar la gasolina más barata cerca de ti.
 
-## Resumen de la práctica
-Esta práctica consiste en la validación técnica de la API REST del Ministerio para la Transición Ecológica y el Reto Demográfico para el posterior desarrollo de una aplicación móvil de consulta de carburantes. El objetivo es interactuar con los endpoints públicos del gobierno, extrayendo datos de estaciones de servicio terrestres y marítimas mediante el uso de parámetros en ruta (*path params*), permitiendo un filtrado dinámico por comunidades autónomas, provincias, fechas e históricos de precios.
+## Estructura y Peticiones
+El proyecto está dividido en módulos para separar la interfaz de la lógica (filtros, listados, toggle, etc.). 
 
----
+Para no sobrecargar la API de golpe, los filtros de ubicación cargan en cascada: primero comunidades, al elegir una se cargan sus provincias, y luego sus municipios.
 
-## 1. Apartado 1. Tomando contacto con la API
+Usamos **TanStack Query** para gestionar las peticiones y la caché. Además, un helper (`endpointBuilder`) se encarga de montar la URL final dependiendo de si buscas terrestres o marítimas y de los filtros que tengas activos.
 
-### Endpoints de Referencia y Diccionarios
-Para la obtención de los identificadores (IDs) de filtrado, se han consultado los siguientes recursos de la documentación oficial:
-* **Documentación API:** [Ayuda de la API REST](https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/help)
-* **Diccionario de Comunidades Autónomas:** `https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/Listados/ComunidadesAutonomas/`
-* **Diccionario de Provincias:** `https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/Listados/Provincias/`
-* **Diccionario de Municipios (Granada - ID 18):** `https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/Listados/MunicipiosPorProvincia/18`
-* **Diccionario de Productos (Combustibles):** `https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/Listados/ProductosPetroliferos/`
+## Rendimiento y Virtualización
+La API puede devolver más de 11.000 estaciones en una sola consulta. Pintar todo eso de golpe bloquearía el navegador.
 
----
-#### • Estaciones de servicio de la comunidad de Castilla y León
-Para obtener el listado completo de las gasolineras terrestres de esta comunidad, se utiliza el endpoint de filtrado por Comunidad Autónoma (`FiltroCCAA`), empleando el código identificador oficial **`07`** asignado a Castilla y León.
-* **Consulta / URL:** `https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/EstacionesTerrestres/FiltroCCAA/07`
+Para evitarlo, implementamos **virtualización del DOM** con `@tanstack/react-virtual`. La app solo dibuja las tarjetas que caben en tu pantalla en ese momento y las va reciclando al hacer scroll. Así el consumo de RAM es mínimo.
 
-#### • Listado de postes marítimos por provincia y producto (Castellón y Gasolina 95 E5)
-En este caso se cambia la raíz del recurso a estaciones marítimas (`EstacionesMaritimas`) y se utiliza el endpoint de cruce múltiple `FiltroProvinciaProducto`. Se aplica el identificador **`12`** para la provincia de Castellón y el identificador **`1`** para el producto Gasolina 95 E5.
-* **Consulta / URL:** `https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/PostesMaritimos/FiltroProvinciaProducto/12/1`
+## Geolocalización y Ahorro
+Los datos de la API se limpian y preparan en un custom hook (`useStationsData`), donde se normalizan los precios y las coordenadas.
 
-#### • Precios de estaciones de servicio para el día 12/02/2026 y el municipio de Cúllar
-Para la consulta de datos históricos en una fecha concreta se recurre al recurso `EstacionesTerrestresHistorial`, introduciendo la fecha con estructura `DD-MM-AAAA`. Para acotar los resultados al municipio de Cúllar, se concatena al final su código de municipio correspondiente, que es el **`2724`**.
-* **Consulta / URL:** `https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/EstacionesTerrestresHist/filtroMunicipio/12-02-2026/2724`
+Aquí entra la lógica principal: si activas la ubicación y filtras por un combustible, el sistema usa la **fórmula de Haversine** para calcular a qué distancia real está cada gasolinera. 
+
+Con eso, la app cruza los datos y te muestra las 50 opciones más baratas y cercanas a tu posición. Si prefieres no usar la ubicación, la lista se ordena de menor a mayor precio por defecto.
+
+## Stack
+- **Core:** React 19, TypeScript, Vite
+- **Peticiones y estado:** @tanstack/react-query
+- **Listas gigantes:** @tanstack/react-virtual
+- **UI:** Tailwind CSS, DaisyUI, react-day-picker
+
+## Ejecución Local
+
+```bash
+# Instalar dependencias
+npm install
+
+# Levantar entorno de desarrollo
+npm run dev
+
+# Generar build de producción
+npm run build
