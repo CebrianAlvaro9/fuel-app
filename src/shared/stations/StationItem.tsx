@@ -1,4 +1,5 @@
 import { getAvailableFuels } from "../../helpers/stationFuel";
+import { parseToNumber } from "../../helpers/stationsModifiers";
 import type { LandStationPrice, MaritimeStationPrice } from "../../models/stations.model";
 
 interface StationCardProps {
@@ -10,6 +11,10 @@ export const StationCard = ({ station, type }: StationCardProps) => {
   const isLand = type === 'land';
   const marineStation = station as MaritimeStationPrice;
   const availableFuels = getAvailableFuels(station);
+  const stationLat = parseToNumber(station.Latitud);
+  const stationLon = parseToNumber(station["Longitud (WGS84)"]);
+
+  const url = `https://www.google.com/maps/search/?api=1&query=${stationLat},${stationLon}`
 
   return (
     <div
@@ -46,12 +51,12 @@ export const StationCard = ({ station, type }: StationCardProps) => {
             <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
             <circle cx="12" cy="10" r="3" />
           </svg></span>
-          <p className="leading-tight">
+          <a title="Ver ubicación en Google Maps" href={url} target="_blank" rel="noopener noreferrer" className="leading-tight">
             {station['Dirección']} <br />
             <span className="font-semibold text-base-content/90">
               {station['Localidad']}
             </span>
-          </p>
+          </a>
         </div>
 
         {/* Info específica de estaciones marítimas */}
