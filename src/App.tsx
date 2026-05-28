@@ -27,6 +27,7 @@ function App() {
   return (
     <div className="min-h-screen bg-base-200 pb-12 font-sans">
       <Filters
+        location={location}
         filters={filters}
         setLocation={setLocation}
         onChange={updateFilters}

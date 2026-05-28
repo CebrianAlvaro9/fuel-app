@@ -1,10 +1,14 @@
 import type { Coords } from "../../models/ubi.model";
 export const LocationFilter = ({
   setLocation,
+  location
 }: {
   setLocation: (location: Coords | null) => void;
+  location: Coords | null;
 }) => {
   const handleLocation = () => {
+    console.log("handleLocation", location);
+    if (location) return setLocation(null);
     window.navigator.geolocation.getCurrentPosition(
       (position) => {
         setLocation({
@@ -25,15 +29,15 @@ export const LocationFilter = ({
         <button
           title="Se mostraran las estaciones cercanas a tu ubicación"
           onClick={handleLocation}
-          className=" h-min rounded-xl cursor-pointer"
+          className=" h-min rounded-xl cursor-pointer hover:scale-105"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
             viewBox="0 0 24 24"
-            strokeWidth={1.5}
+            strokeWidth={location ? 2 : 1.5}
             stroke="currentColor"
-            className="size-6"
+            className={`size-6  ${location ? "text-emerald-500" : ""}`}
           >
             <path
               strokeLinecap="round"

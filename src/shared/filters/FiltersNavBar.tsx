@@ -11,9 +11,10 @@ interface FiltersProps {
   filters: FilterState;
   onChange: (updates: Partial<FilterState>) => void;
   setLocation: (location: Coords | null) => void;
+  location: Coords | null;
 }
 
-export const Filters = ({ filters, onChange, setLocation }: FiltersProps) => {
+export const Filters = ({ filters, onChange, setLocation, location }: FiltersProps) => {
   const { options, loaders } = useFiltersData({
     communityId: filters.community,
     provinceId: filters.province,
@@ -58,7 +59,7 @@ export const Filters = ({ filters, onChange, setLocation }: FiltersProps) => {
             />
 
             <div className="flex items-center gap-2 md:hidden">
-              <LocationFilter setLocation={setLocation} />
+              <LocationFilter setLocation={setLocation} location={location} />
             </div>
           </div>
           <label
@@ -99,7 +100,7 @@ export const Filters = ({ filters, onChange, setLocation }: FiltersProps) => {
             "
         >
           <div className="hidden md:block">
-            <LocationFilter setLocation={setLocation} />
+            <LocationFilter setLocation={setLocation} location={location} />
           </div>
 
           <SelectFilter
