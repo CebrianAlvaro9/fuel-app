@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react";
 import { StationsList } from "./StationsList";
 import { StationsViewToggle } from "./StationsViewToggle";
 import { RefreshButton } from "./RefreshButton";
+import { MapErrorBoundary } from "./MapErrorBoundary";
 import { mapContainerClasses } from "./map/mapLayout";
 import type { StationsFromApi } from "../../models/stations.model";
 import type { Coords } from "../../models/ubi.model";
@@ -101,17 +102,19 @@ export const StationsSection = ({
         // El `fallback` comparte con el mapa real la constante de altura
         // (`MAP_CONTAINER_CLASSES`), así que cargar el chunk diferido no da
         // salto de layout.
-        <Suspense
-          fallback={<div className={mapContainerClasses(favoritesCollapsed)} />}
-        >
-          <StationsMap
-            stations={stations}
-            location={location}
-            radiusKm={radiusKm}
-            petrolLabel={petrolLabel}
-            favoritesCollapsed={favoritesCollapsed}
-          />
-        </Suspense>
+        <MapErrorBoundary onBackToList={() => onViewChange("list")}>
+          <Suspense
+            fallback={<div className={mapContainerClasses(favoritesCollapsed)} />}
+          >
+            <StationsMap
+              stations={stations}
+              location={location}
+              radiusKm={radiusKm}
+              petrolLabel={petrolLabel}
+              favoritesCollapsed={favoritesCollapsed}
+            />
+          </Suspense>
+        </MapErrorBoundary>
       ) : (
         <StationsList
           loading={loading}

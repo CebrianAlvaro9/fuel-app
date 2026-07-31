@@ -1,4 +1,5 @@
-import * as L from "leaflet";
+import type * as LeafletTypes from "leaflet";
+import { L } from "./leaflet";
 
 interface PriceMarkerOptions {
   price: string;
@@ -13,7 +14,7 @@ interface PriceMarkerOptions {
  * precio: así el icono del grupo puede leer el de cada hijo sin mantener un
  * mapa aparte que habría que sincronizar al reconstruir los marcadores.
  */
-export interface StationMarkerOptions extends L.MarkerOptions {
+export interface StationMarkerOptions extends LeafletTypes.MarkerOptions {
   priceValue: number;
 }
 
@@ -24,9 +25,9 @@ export interface StationMarkerOptions extends L.MarkerOptions {
  * estructuralmente imposible, sin tener que acordarse de escapar nada.
  */
 export const createPriceMarker = (
-  coords: L.LatLngExpression,
+  coords: LeafletTypes.LatLngExpression,
   { price, name, isBest, priceValue }: PriceMarkerOptions,
-): L.Marker => {
+): LeafletTypes.Marker => {
   const container = document.createElement("div");
   container.className = isBest ? "fuel-marker fuel-marker--best" : "fuel-marker";
 
@@ -66,9 +67,9 @@ export const createPriceMarker = (
  * vista el precio dejaría el mapa sin lo único que se viene a mirar.
  */
 export const createClusterIcon = (cluster: {
-  getAllChildMarkers: () => L.Marker[];
+  getAllChildMarkers: () => LeafletTypes.Marker[];
   getChildCount: () => number;
-}): L.DivIcon => {
+}): LeafletTypes.DivIcon => {
   const prices = cluster
     .getAllChildMarkers()
     .map((marker) => (marker.options as StationMarkerOptions).priceValue)
@@ -99,7 +100,7 @@ export const createClusterIcon = (cluster: {
 };
 
 /** Marcador de la posición del usuario: un punto sólido, sin etiqueta. */
-export const createUserMarker = (coords: L.LatLngExpression): L.Marker => {
+export const createUserMarker = (coords: LeafletTypes.LatLngExpression): LeafletTypes.Marker => {
   const icon = L.divIcon({
     className: "user-marker",
     iconSize: [18, 18],
