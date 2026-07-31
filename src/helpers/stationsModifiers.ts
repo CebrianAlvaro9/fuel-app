@@ -1,11 +1,38 @@
-import type { LandStationPrice, MaritimeStationPrice, StationExtra } from "../models/stations.model";
+import type {
+  AnyStation,
+  LandStationPrice,
+  MaritimeStationPrice,
+} from "../models/stations.model";
 import type { Coords } from "../models/ubi.model";
-
-type Station = (MaritimeStationPrice | LandStationPrice | (MaritimeStationPrice & StationExtra) | (LandStationPrice & StationExtra))[];
 
 export const parseToNumber = (coordStr: string): number => {
   if (!coordStr) return 0;
   return parseFloat(coordStr.replace(",", "."));
+};
+
+/**
+ * Coordenadas usables de una estación, o null si faltan.
+ *
+ * `parseToNumber("")` devuelve 0 (comportamiento intencionado para precios),
+ * así que una estación sin coordenadas caería en (0, 0) — el golfo de Guinea.
+ * Aquí se detecta ese caso en vez de calcular una distancia de 4.400 km.
+ */
+export const getStationCoords = (
+  station: LandStationPrice | MaritimeStationPrice,
+): { lat: number; lon: number } | null => {
+  const lat = parseToNumber(station.Latitud);
+  const lon = parseToNumber(station["Longitud (WGS84)"]);
+
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+  if (lat === 0 && lon === 0) return null;
+
+  return { lat, lon };
+};
+
+export const getStationId = (
+  station: LandStationPrice | MaritimeStationPrice,
+): string => {
+  return "IDPosteMaritimo" in station ? station.IDPosteMaritimo : station.IDEESS;
 };
 
 export const getHaversineDistance = (
@@ -29,37 +56,54 @@ export const getHaversineDistance = (
   return R * c;
 };
 
-
-export const mapAndSortByDistance = (stations: Station, location: Coords) => {
+/**
+ * Añade la distancia al usuario y ordena de más cerca a más lejos.
+ * Las estaciones sin coordenadas válidas reciben distancia `Infinity`, así que
+ * ordenan al final y fallan automáticamente cualquier filtro de radio.
+ */
+export const mapAndSortByDistance = (
+  stations: AnyStation[],
+  location: Coords,
+): AnyStation[] => {
   const mappedStations = stations.map((station) => {
-    const stationLat = parseToNumber(station.Latitud);
-    const stationLon = parseToNumber(station["Longitud (WGS84)"]);
+    const coords = getStationCoords(station);
+
+    if (!coords) {
+      return { ...station, distanciaUsuarioKm: Number.POSITIVE_INFINITY };
+    }
 
     const distanceKm = getHaversineDistance(
       location.latitude,
       location.longitude,
-      stationLat,
-      stationLon,
+      coords.lat,
+      coords.lon,
     );
 
     return {
       ...station,
-      LatitudParsed: stationLat,
-      LongitudParsed: stationLon,
+      LatitudParsed: coords.lat,
+      LongitudParsed: coords.lon,
       distanciaUsuarioKm: Number(distanceKm.toFixed(2)),
     };
   });
 
-  return mappedStations.sort((a, b) => {
-    if (a.distanciaUsuarioKm === null || a.distanciaUsuarioKm === undefined) return 1;
-    if (b.distanciaUsuarioKm === null || b.distanciaUsuarioKm === undefined) return -1;
-    return a.distanciaUsuarioKm - b.distanciaUsuarioKm;
-  });
+  return mappedStations.sort(
+    (a, b) => a.distanciaUsuarioKm - b.distanciaUsuarioKm,
+  );
 };
 
+export const filterByRadius = (
+  stations: AnyStation[],
+  radiusKm: number,
+): AnyStation[] =>
+  stations.filter((s) => (s.distanciaUsuarioKm ?? Infinity) <= radiusKm);
 
-export const sortByPrice = (stations: Station) => {
-  return stations.sort((a, b) => {
+/**
+ * No mutante a propósito: el array de entrada puede venir directamente de la
+ * caché de React Query, y `Array.prototype.sort` ordena in situ.
+ */
+export const sortByPrice = (stations: AnyStation[]): AnyStation[] => {
+  return [...stations].sort((a, b) => {
     if (a.PrecioProducto === undefined) return 1;
     if (b.PrecioProducto === undefined) return -1;
     return parseToNumber(a.PrecioProducto) - parseToNumber(b.PrecioProducto);

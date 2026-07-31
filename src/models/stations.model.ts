@@ -5,9 +5,16 @@ export type StationExtra = {
   distanciaUsuarioKm?: number;
 }
 
+/**
+ * Una estación de cualquier tipo, con los campos derivados que añade
+ * `mapAndSortByDistance` (todos opcionales, así que el JSON crudo de la API
+ * sigue siendo asignable).
+ */
+export type AnyStation = (LandStationPrice | MaritimeStationPrice) & StationExtra;
+
 export type StationsFromApi = {
   Fecha: string;
-  ListaEESSPrecio: (MaritimeStationPrice | LandStationPrice | (MaritimeStationPrice & StationExtra) | (LandStationPrice & StationExtra))[];
+  ListaEESSPrecio: AnyStation[];
   Nota: string;
   ResultadoConsulta: string;
 };

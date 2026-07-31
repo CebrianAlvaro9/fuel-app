@@ -10,4 +10,11 @@ export default defineConfig({
     tailwindcss()
   ],
   base: 'fuel-app',
+  server: {
+    // host: true expone el servidor en la LAN para probar desde el móvil.
+    host: true,
+    // Sin puerto fijo: se toma el asignado por PORT si viene, y si no Vite
+    // elige (5173 y, si está ocupado, el siguiente libre).
+    port: process.env.PORT ? Number(process.env.PORT) : undefined,
+  },
 })

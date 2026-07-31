@@ -10,6 +10,8 @@ export interface SelectFilterProps {
   disabled?: boolean;
   isLoading?: boolean;
   placeholder: string;
+  /** Clases de tamaño/ancho; el panel móvil las necesita más grandes. */
+  className?: string;
 }
 
 export const SelectFilter = ({
@@ -19,10 +21,12 @@ export const SelectFilter = ({
   disabled = false,
   isLoading = false,
   placeholder,
+  className = "select-sm w-full md:w-auto",
 }: SelectFilterProps) => {
   return (
     <select
-      className="select select-bordered select-sm rounded-xl w-full md:w-auto focus:bg-base-100 disabled:opacity-50 transition-all cursor-pointer"
+      aria-label={placeholder}
+      className={`select select-bordered rounded-xl focus:bg-base-100 disabled:opacity-50 transition-all cursor-pointer ${className}`}
       value={value}
       onChange={(e) => onChange(e.target.value)}
       disabled={disabled || isLoading}

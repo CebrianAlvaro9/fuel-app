@@ -1,11 +1,9 @@
-﻿import { useLayoutEffect, useMemo, useRef } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import { StationCard } from "./StationItem";
-import type {
-  LandStationPrice,
-  MaritimeStationPrice,
-  StationsFromApi,
-} from "../../models/stations.model";
+import { EmptyResults } from "./EmptyResults";
+import type { StationsFromApi } from "../../models/stations.model";
+import { getStationId } from "../../helpers/stationsModifiers";
 import { useResponsiveColumns } from "../../hooks/useResponsiveColumns";
 
 interface StationsListProps {
@@ -13,6 +11,11 @@ interface StationsListProps {
   error: Error | null;
   stations: StationsFromApi | undefined;
   isMarine: boolean;
+  hasLocation: boolean;
+  radiusKm: number;
+  onRadiusChange: (km: number) => void;
+  onResetFilters: () => void;
+  sortedByPrice: boolean;
 }
 
 export const StationsList = ({
@@ -20,13 +23,28 @@ export const StationsList = ({
   error,
   stations,
   isMarine,
+  hasLocation,
+  radiusKm,
+  onRadiusChange,
+  onResetFilters,
+  sortedByPrice,
 }: StationsListProps) => {
+  /*
+   * El React Compiler memoiza `virtualizer.getVirtualItems()` contra la
+   * identidad del virtualizador, que es estable aunque su estado interno
+   * cambie: el resultado se congelaba y la lista no reaccionaba al scroll.
+   * `use no memo` es la vía de escape que documenta TanStack.
+   */
+  "use no memo";
+
   const columns = useResponsiveColumns();
   const listRef = useRef<HTMLDivElement | null>(null);
-  const listOffsetRef = useRef(0);
+  const [listOffset, setListOffset] = useState(0);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const rawStations = stations?.ListaEESSPrecio || [];
+  const rawStations = useMemo(
+    () => stations?.ListaEESSPrecio ?? [],
+    [stations],
+  );
 
   const chunkedStations = useMemo(() => {
     const chunks = [];
@@ -37,24 +55,56 @@ export const StationsList = ({
   }, [rawStations, columns]);
 
   useLayoutEffect(() => {
-    listOffsetRef.current = listRef.current?.offsetTop ?? 0;
+    setListOffset(listRef.current?.offsetTop ?? 0);
   }, [stations]);
 
   const virtualizer = useWindowVirtualizer({
     count: chunkedStations.length,
-    estimateSize: () => 280,
+    // Medido sobre datos reales: las tarjetas rondan 380-430px. Quedarse corto
+    // impide que el virtualizador converja y las filas acaban solapándose.
+    estimateSize: () => (columns === 1 ? 390 : 430),
     overscan: 3,
-    // eslint-disable-next-line react-hooks/refs
-    scrollMargin: listOffsetRef.current,
+    scrollMargin: listOffset,
   });
 
-  const getStationId = (
-    station: LandStationPrice | MaritimeStationPrice,
-  ): string => {
-    return "IDPosteMaritimo" in station
-      ? station.IDPosteMaritimo
-      : station.IDEESS;
-  };
+  /*
+   * Al rotar o redimensionar cambian los límites de los chunks, así que las
+   * medidas cacheadas dejan de valer. El ref es imprescindible: `measure()`
+   * descarta TODAS las medidas, y como su identidad cambia en cada render,
+   * incluirlo en las dependencias lo dispararía continuamente y las tarjetas
+   * se quedarían pintadas con el tamaño estimado (solapándose).
+   */
+  const { measure } = virtualizer;
+  const prevColumnsRef = useRef(columns);
+  useEffect(() => {
+    if (prevColumnsRef.current === columns) return;
+    prevColumnsRef.current = columns;
+    measure();
+  }, [columns, measure]);
+
+  /*
+   * `start` y `end` de cada item vienen desplazados por `scrollMargin`, pero
+   * `getTotalSize()` no lo incluye: hay que normalizar los dos extremos contra
+   * el mismo origen. Restarlo solo arriba dejaba un `paddingBottom` negativo,
+   * la página se quedaba sin altura y nunca se pedían más filas.
+   */
+  const virtualItems = virtualizer.getVirtualItems();
+  const { scrollMargin } = virtualizer.options;
+  const firstStart =
+    virtualItems.length > 0 ? virtualItems[0].start - scrollMargin : 0;
+  const lastEnd =
+    virtualItems.length > 0
+      ? virtualItems[virtualItems.length - 1].end - scrollMargin
+      : 0;
+
+  const paddingTop = Math.max(0, firstStart);
+  const paddingBottom = Math.max(0, virtualizer.getTotalSize() - lastEnd);
+
+  const orderLabel = sortedByPrice
+    ? "Ordenadas por precio"
+    : hasLocation
+      ? "Ordenadas por distancia"
+      : null;
 
   return (
     <>
@@ -68,12 +118,13 @@ export const StationsList = ({
       )}
 
       {error && (
-        <div className="alert alert-error shadow-lg max-w-2xl mx-auto rounded-2xl">
+        <div className="max-w-2xl mx-auto rounded-xl border border-base-content/30 bg-base-100 px-4 py-3 flex items-start gap-3">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             className="stroke-current shrink-0 h-6 w-6"
             fill="none"
             viewBox="0 0 24 24"
+            aria-hidden="true"
           >
             <path
               strokeLinecap="round"
@@ -84,60 +135,73 @@ export const StationsList = ({
           </svg>
           <div>
             <h3 className="font-bold">Error de conexión</h3>
-            <div className="text-xs">{error.message}</div>
+            <div className="text-xs text-base-content/60">{error.message}</div>
           </div>
         </div>
       )}
 
-      {stations && (
+      {stations && rawStations.length === 0 && (
+        <EmptyResults
+          hasLocation={hasLocation}
+          radiusKm={radiusKm}
+          onRadiusChange={onRadiusChange}
+          onResetFilters={onResetFilters}
+        />
+      )}
+
+      {stations && rawStations.length > 0 && (
         <div className="fade-in pb-12">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6 pl-2">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 mb-6 pl-2">
             <h2 className="text-xl font-bold text-base-content flex items-center gap-3">
               <span
-                className={`${isMarine ? "bg-info" : "bg-neutral"} w-1.5 h-6 rounded-full inline-block`}
+                className={`${isMarine ? "bg-base-content/40" : "bg-base-content"} w-1.5 h-6 rounded-full inline-block`}
               ></span>
               <span>{rawStations.length} Estaciones</span>
             </h2>
-            <span className="text-xs font-medium text-base-content/60 sm:text-right">
-              Actualizado: {stations.Fecha}
-            </span>
-          </div>
-          <div ref={listRef} className="w-full">
-            <div
-              style={{
-                height: `${virtualizer.getTotalSize()}px`,
-                width: "100%",
-                position: "relative",
-              }}
-            >
-              {virtualizer.getVirtualItems().map((virtualRow) => {
-                const rowStations = chunkedStations[virtualRow.index];
-
-                return (
-                  <div
-                    key={virtualRow.index}
-                    ref={virtualizer.measureElement}
-                    data-index={virtualRow.index}
-                    style={{
-                      position: "absolute",
-                      top: 0,
-                      left: 0,
-                      width: "100%",
-                      transform: `translateY(${virtualRow.start - virtualizer.options.scrollMargin}px)`,
-                    }}
-                    className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"
-                  >
-                    {rowStations.map((station) => (
-                      <StationCard
-                        key={getStationId(station)}
-                        station={station}
-                        type={isMarine ? "marine" : "land"}
-                      />
-                    ))}
-                  </div>
-                );
-              })}
+            <div className="flex flex-col sm:items-end text-xs font-medium text-base-content/60">
+              <span>
+                {hasLocation && `En ${radiusKm} km`}
+                {hasLocation && orderLabel && " · "}
+                {orderLabel}
+              </span>
+              <span>Actualizado: {stations.Fecha}</span>
             </div>
+          </div>
+
+          {/*
+            Filas en flujo normal con espaciadores arriba y abajo, en lugar de
+            posicionamiento absoluto: así no pueden solaparse aunque el tamaño
+            estimado se quede corto. La medición solo afina la altura total
+            (y por tanto la barra de scroll).
+          */}
+          <div
+            ref={listRef}
+            className="w-full"
+            style={{ paddingTop, paddingBottom }}
+          >
+            {virtualItems.map((virtualRow) => {
+              const rowStations = chunkedStations[virtualRow.index];
+
+              return (
+                <div
+                  key={virtualRow.key}
+                  ref={virtualizer.measureElement}
+                  data-index={virtualRow.index}
+                  style={{
+                    gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
+                  }}
+                  className="grid gap-6 pb-6"
+                >
+                  {rowStations.map((station) => (
+                    <StationCard
+                      key={getStationId(station)}
+                      station={station}
+                      type={isMarine ? "marine" : "land"}
+                    />
+                  ))}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
