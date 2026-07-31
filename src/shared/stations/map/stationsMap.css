@@ -132,3 +132,37 @@
   white-space: nowrap;
   opacity: 0.75;
 }
+
+/* Burbuja de un grupo de gasolineras. Muestra el precio más bajo que contiene,
+   no solo el recuento: agrupar sirve para que el mapa se lea, pero perder de
+   vista el precio dejaría el mapa sin lo único que se viene a mirar. */
+.fuel-cluster {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 78px;
+  height: 44px;
+  border-radius: 999px;
+  background: var(--color-base-100);
+  color: var(--color-base-content);
+  border: 2px solid var(--color-base-content);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.2);
+}
+
+.fuel-cluster__price {
+  font-size: 0.8rem;
+  font-weight: 900;
+  line-height: 1.1;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.fuel-cluster__count {
+  font-size: 0.5rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  opacity: 0.6;
+  white-space: nowrap;
+}

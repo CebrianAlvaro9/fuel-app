@@ -156,11 +156,21 @@ function App() {
     [filters, radiusKm, searchMode, labels],
   );
 
-  const { stations, isLoading, error } = useStationsData(
+  const { stations, isLoading, isFetching, error, refetch } = useStationsData(
     filters,
     location,
     radiusKm,
   );
+
+  /*
+   * Rehace la búsqueda entera, no solo la petición: si se está buscando por
+   * cercanía se vuelve a pedir la posición, porque tras un rato en marcha lo
+   * más probable es que ya no estés donde estabas.
+   */
+  const refreshSearch = useCallback(() => {
+    refetch();
+    if (searchMode === "nearby") requestLocation();
+  }, [refetch, searchMode, requestLocation]);
 
   const resultsCount = stations?.ListaEESSPrecio.length ?? 0;
 
@@ -206,6 +216,8 @@ function App() {
           view={resultsView}
           onViewChange={setResultsView}
           favoritesCollapsed={favoritesCollapsed}
+          onRefresh={refreshSearch}
+          isFetching={isFetching}
         />
       </main>
 

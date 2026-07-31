@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as L from "leaflet";
+import "leaflet.markercluster";
 import "leaflet/dist/leaflet.css";
+// Solo la hoja base (animaciones y patas de la araña). `MarkerCluster.Default.css`
+// trae las burbujas verdes y amarillas, que romperían el monocromo.
+import "leaflet.markercluster/dist/MarkerCluster.css";
 import "./stationsMap.css";
 import type { StationsFromApi } from "../../../models/stations.model";
 import type { Coords } from "../../../models/ubi.model";
@@ -14,7 +18,11 @@ import {
   MAP_MARKERS_MAX,
   MAP_MARKERS_STEP,
 } from "../../../constants/search";
-import { createPriceMarker, createUserMarker } from "./priceMarker";
+import {
+  createClusterIcon,
+  createPriceMarker,
+  createUserMarker,
+} from "./priceMarker";
 import { StationMapCard } from "./StationMapCard";
 import { mapContainerClasses } from "./mapLayout";
 
@@ -41,7 +49,10 @@ export const StationsMap = ({
 }: StationsMapProps) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<L.Map | null>(null);
-  const markersLayerRef = useRef<L.LayerGroup | null>(null);
+  const clusterLayerRef = useRef<L.MarkerClusterGroup | null>(null);
+  // La más barata vive fuera del grupo: es la respuesta que se viene a buscar,
+  // así que nunca debe quedar escondida dentro de una burbuja.
+  const bestLayerRef = useRef<L.LayerGroup | null>(null);
   const circleRef = useRef<L.Circle | null>(null);
   const userMarkerRef = useRef<L.Marker | null>(null);
 
@@ -70,18 +81,28 @@ export const StationsMap = ({
       maxZoom: 19,
       attribution: TILE_ATTRIBUTION,
     }).addTo(map);
-    const markersLayer = L.layerGroup().addTo(map);
+    const clusterLayer = L.markerClusterGroup({
+      iconCreateFunction: createClusterIcon,
+      // El polígono de cobertura al pasar el ratón es azul y no aporta nada
+      // aquí; las patas de la araña se fuerzan al color del tema.
+      showCoverageOnHover: false,
+      spiderLegPolylineOptions: { weight: 1.2, color: "#18181b", opacity: 0.6 },
+      maxClusterRadius: 46,
+    }).addTo(map);
+    const bestLayer = L.layerGroup().addTo(map);
 
     // Limpiar la selección al tocar el fondo del mapa.
     map.on("click", () => setSelectedId(null));
 
     mapRef.current = map;
-    markersLayerRef.current = markersLayer;
+    clusterLayerRef.current = clusterLayer;
+    bestLayerRef.current = bestLayer;
 
     return () => {
       map.remove();
       mapRef.current = null;
-      markersLayerRef.current = null;
+      clusterLayerRef.current = null;
+      bestLayerRef.current = null;
       circleRef.current = null;
       userMarkerRef.current = null;
     };
@@ -143,15 +164,18 @@ export const StationsMap = ({
     [stations],
   );
 
-  // 4. Marcadores, deps [priced, visibleCount]. `clearLayers()` y
-  // reconstruir; con 50 marcadores diferenciar es prematuro.
+  // 4. Marcadores, deps [priced, visibleCount]. `clearLayers()` y reconstruir;
+  // con 50 marcadores diferenciar es prematuro.
   useEffect(() => {
-    const layer = markersLayerRef.current;
-    if (!layer) return;
+    const cluster = clusterLayerRef.current;
+    const bestLayer = bestLayerRef.current;
+    if (!cluster || !bestLayer) return;
 
-    layer.clearLayers();
+    cluster.clearLayers();
+    bestLayer.clearLayers();
 
     const visible = priced.slice(0, Math.min(visibleCount, priced.length));
+    const batch: L.Marker[] = [];
     let bestAssigned = false;
 
     visible.forEach((station) => {
@@ -169,10 +193,17 @@ export const StationsMap = ({
         price: station.PrecioProducto!,
         name: station["Rótulo"],
         isBest,
+        priceValue: parseToNumber(station.PrecioProducto!),
       });
       marker.on("click", () => setSelectedId(getStationId(station)));
-      layer.addLayer(marker);
+
+      if (isBest) bestLayer.addLayer(marker);
+      else batch.push(marker);
     });
+
+    // `addLayers` en lote: el plugin reconstruye su índice una sola vez en vez
+    // de una por marcador.
+    cluster.addLayers(batch);
   }, [priced, visibleCount]);
 
   // 5. `fitBounds` al círculo, deps [location, radiusKm]. Al círculo y no al

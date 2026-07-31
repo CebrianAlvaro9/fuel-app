@@ -23,7 +23,7 @@ export const useStationsData = (
 ) => {
   const endpoint = buildStationsEndpoint(filters);
 
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, isFetching, error, refetch } = useQuery({
     queryKey: ["stations", filters],
     queryFn: async () => {
       const [data, err] = await getLandStations(endpoint);
@@ -55,5 +55,7 @@ export const useStationsData = (
     return { ...data, ListaEESSPrecio: list };
   }, [data, withDistance, location, radiusKm, filters.petrol]);
 
-  return { stations, isLoading, error };
+  // `isFetching` y no `isLoading`: al refrescar ya hay datos en pantalla, así
+  // que `isLoading` es false y no serviría para animar el botón.
+  return { stations, isLoading, isFetching, error, refetch };
 };

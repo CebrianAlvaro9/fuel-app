@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { StationsList } from "./StationsList";
 import { StationsViewToggle } from "./StationsViewToggle";
+import { RefreshButton } from "./RefreshButton";
 import { mapContainerClasses } from "./map/mapLayout";
 import type { StationsFromApi } from "../../models/stations.model";
 import type { Coords } from "../../models/ubi.model";
@@ -29,6 +30,8 @@ interface StationsSectionProps {
   view: StationsView;
   onViewChange: (view: StationsView) => void;
   favoritesCollapsed: boolean;
+  onRefresh: () => void;
+  isFetching: boolean;
 }
 
 /**
@@ -50,6 +53,8 @@ export const StationsSection = ({
   view,
   onViewChange,
   favoritesCollapsed,
+  onRefresh,
+  isFetching,
 }: StationsSectionProps) => {
   const hasLocation = Boolean(location);
   const hasResults = Boolean(stations && stations.ListaEESSPrecio.length > 0);
@@ -67,13 +72,29 @@ export const StationsSection = ({
       {/* El conmutador solo se pinta cuando hay resultados, de modo que
           `StationsList` sigue siendo el único dueño del spinner, del error y
           de `EmptyResults`. */}
-      {hasResults && (
-        <StationsViewToggle
-          view={activeView}
-          onChange={onViewChange}
-          hasLocation={hasLocation}
-          hasFuel={sortedByPrice}
-        />
+      {/* El botón de actualizar se pinta aunque no haya resultados: si una
+          búsqueda vino vacía o falló, es justo cuando hace falta reintentar. */}
+      {!loading && (
+        /* `items-start`: la pista bajo el conmutador hace el bloque de dos
+           líneas, y centrar dejaba el botón descolgado respecto a las pestañas. */
+        <div className="flex items-start justify-between gap-3">
+          {hasResults ? (
+            <StationsViewToggle
+              view={activeView}
+              onChange={onViewChange}
+              hasLocation={hasLocation}
+              hasFuel={sortedByPrice}
+            />
+          ) : (
+            <span />
+          )}
+
+          <RefreshButton
+            onRefresh={onRefresh}
+            busy={isFetching}
+            updatedAt={stations?.Fecha}
+          />
+        </div>
       )}
 
       {activeView === "map" && mapReady ? (

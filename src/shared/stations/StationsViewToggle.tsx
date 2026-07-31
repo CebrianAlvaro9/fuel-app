@@ -29,12 +29,15 @@ export const StationsViewToggle = ({
       ? "Elige un combustible para ver los precios en el mapa"
       : null;
 
+  // Ancho acotado, no `w-full`: dentro de la fila con el botón de actualizar,
+  // estirarse dejaba un hueco raro entre ambos. El espaciado inferior lo
+  // controla el padre.
   return (
-    <div className="mb-4">
+    <div className="min-w-0">
       <div
         role="tablist"
         aria-label="Vista de resultados"
-        className="bg-base-200 p-1 rounded-xl flex items-center gap-1 border border-base-300 w-full sm:w-64"
+        className="bg-base-200 p-1 rounded-xl flex items-center gap-1 border border-base-300 w-44 sm:w-64"
       >
         {OPTIONS.map((option) => {
           const isActive = view === option.value;
@@ -66,7 +69,9 @@ export const StationsViewToggle = ({
       {/* Los botones deshabilitados no disparan hover, así que el `title`
           solo no basta (y en móvil no existe). */}
       {mapDisabled && hint && (
-        <p className="text-xs text-base-content/50 mt-1 pl-1">{hint}</p>
+        <p className="text-xs text-base-content/50 mt-1.5 pl-1 leading-tight">
+          {hint}
+        </p>
       )}
     </div>
   );

@@ -1,16 +1,28 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <!-- Fondo a sangre: el sistema operativo aplica su propia máscara. -->
-  <rect width="512" height="512" fill="#065f46"/>
+  <rect width="512" height="512" fill="#141414"/>
 
-  <!-- Contenido dentro de la zona segura (círculo de radio 40%). -->
-  <g transform="translate(154 154) scale(8.67)">
-    <path d="M1 21.5h13.5v-1a1 1 0 0 0-1-1H2a1 1 0 0 0-1 1v1z" fill="#94a3b8"/>
-    <rect x="2.5" y="2" width="10" height="18" rx="2" fill="#10b981"/>
-    <rect x="4.5" y="5" width="6" height="5" rx="1" fill="#0f172a"/>
-    <rect x="5.5" y="6" width="4" height="3" rx="0.5" fill="#ecfdf5"/>
-    <path d="M12.5 13h2a3 3 0 0 1 3 3v2a1.6 1.6 0 0 0 3.2 0v-7.5l-1.7-2.2"
-          fill="none" stroke="#cbd5e1" stroke-width="2.5"
+  <!--
+    Mismo logo, algo más pequeño para caber en la zona segura (círculo del 80%).
+    Un bloque 2:1 inscrito en ese círculo admite como mucho 367x181; se usa
+    324x160 para dejar margen.
+  -->
+  <g transform="translate(94 176) scale(10)">
+    <path d="M11.2 3.4 A5.9 5.9 0 1 0 13.9 8 L9.4 8"
+          fill="none" stroke="#ffffff" stroke-width="3.5"
           stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M18 5.5l1.5 2.5v3.5h-3V8L18 5.5z" fill="#94a3b8"/>
+
+    <g transform="translate(18 0) scale(0.8) translate(-2.6 -2)">
+      <g fill="#ffffff">
+        <rect x="2.6" y="19.4" width="12.8" height="2.6" rx="1.3"/>
+        <rect x="4.4" y="2" width="9.2" height="16.8" rx="2.2"/>
+      </g>
+
+      <rect x="6.4" y="4.4" width="5.2" height="4.2" rx="1" fill="#141414"/>
+
+      <path d="M13.6 9h2.4a1.7 1.7 0 0 1 1.7 1.7v4a1.35 1.35 0 0 0 2.7 0V9.2"
+            fill="none" stroke="#ffffff" stroke-width="2.1"
+            stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
   </g>
 </svg>
