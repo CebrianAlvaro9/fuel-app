@@ -4,6 +4,10 @@ export const MIN_RADIUS_KM = 1;
 export const MAX_RADIUS_KM = 50;
 export const DEFAULT_RADIUS_KM = 10;
 
+export const MAP_MARKERS_INITIAL = 50;
+export const MAP_MARKERS_STEP = 50;
+export const MAP_MARKERS_MAX = 200;
+
 /*
  * La API sirve una única lista de 31 productos para los dos tipos de estación,
  * pero la mayoría no existen en cada uno. Verificado contra la API:
