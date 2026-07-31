@@ -1,148 +1,174 @@
 import { useState } from "react";
-import { useFiltersData } from "../../hooks/useFiltersData";
 import type { FilterState } from "../../models/filters.model";
-import { SelectFilter } from "./SelectFilter";
-import { ToggleStationType } from "./ToggleStationType";
+import type { SavedSearch, SearchSnapshot } from "../../models/savedSearch.model";
+import type { GeolocationStatus } from "../../hooks/useGeolocation";
+import type { SearchMode } from "../../constants/search";
+import { countActiveFilters } from "../../helpers/searchSummary";
 import { LocationFilter } from "./LocationFilter";
-import { DatePicker } from "./DatePicker";
-import type { Coords } from "../../models/ubi.model";
+import { ToggleStationType } from "./ToggleStationType";
+import { FiltersFields } from "./FiltersFields";
+import { MobileTopBar } from "./MobileTopBar";
+import { FiltersSheet } from "./FiltersSheet";
+import { FavoriteChips } from "../favorites/FavoriteChips";
 
 interface FiltersProps {
   filters: FilterState;
   onChange: (updates: Partial<FilterState>) => void;
-  setLocation: (location: Coords | null) => void;
-  location: Coords | null;
+  onToggleMarine: (isMarine: boolean) => void;
+  radiusKm: number;
+  onRadiusChange: (km: number) => void;
+  searchMode: SearchMode;
+  onSearchModeChange: (mode: SearchMode) => void;
+  locationStatus: GeolocationStatus;
+  locationError: string | null;
+  hasLocation: boolean;
+  onToggleLocation: () => void;
+  resultsCount: number;
+  onResetFilters: () => void;
+  currentSnapshot: SearchSnapshot;
+  favorites: SavedSearch[];
+  pinnedId: string | null;
+  onApplySearch: (search: SavedSearch) => void;
+  onRenameSearch: (id: string, name: string) => void;
+  onRemoveSearch: (id: string) => void;
+  onTogglePin: (id: string) => void;
+  onSaveCurrent: () => void;
 }
 
-export const Filters = ({ filters, onChange, setLocation, location }: FiltersProps) => {
-  const { options, loaders } = useFiltersData({
-    communityId: filters.community,
-    provinceId: filters.province,
-  });
-  const [date, setDate] = useState<Date | undefined>();
+export const Filters = ({
+  filters,
+  onChange,
+  onToggleMarine,
+  radiusKm,
+  onRadiusChange,
+  searchMode,
+  onSearchModeChange,
+  locationStatus,
+  locationError,
+  hasLocation,
+  onToggleLocation,
+  resultsCount,
+  onResetFilters,
+  currentSnapshot,
+  favorites,
+  pinnedId,
+  onApplySearch,
+  onRenameSearch,
+  onRemoveSearch,
+  onTogglePin,
+  onSaveCurrent,
+}: FiltersProps) => {
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const activeFilters = countActiveFilters(filters, searchMode === "nearby");
 
-  const handleCommunityChange = (value: string) => {
-    onChange({
-      community: value,
-      province: "",
-      municipality: "",
-    });
-  };
-  const handleProvinceChange = (value: string) => {
-    onChange({
-      province: value,
-      municipality: "",
-    });
-  };
-
-  const handleToggleMarine = (isMarineValue: boolean) => {
-    onChange({
-      isMarine: isMarineValue,
-      community: "",
-      province: "",
-      municipality: "",
-      petrol: "",
-      date: "",
-    });
-    setDate(undefined);
+  const fieldsProps = {
+    filters,
+    onChange,
+    radiusKm,
+    onRadiusChange,
+    hasLocation,
+    searchMode,
+    onSearchModeChange,
   };
 
   return (
-    <div className="sticky top-6 z-50 px-4 mb-12">
-      <div className="relative max-w-5xl mx-auto bg-base-100/80 backdrop-blur-xl shadow-xl shadow-base-content/5 border border-base-300/50 rounded-3xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 transition-all">
+    <>
+      {/* Móvil: barra compacta pegada arriba + bottom sheet */}
+      <div className="md:hidden sticky top-0 z-40 bg-base-100/90 backdrop-blur-xl border-b border-base-300/50 px-4 pt-[calc(0.5rem+env(safe-area-inset-top))] pb-2 mb-4">
+        <MobileTopBar
+          isMarine={filters.isMarine}
+          onToggleMarine={onToggleMarine}
+          locationStatus={locationStatus}
+          hasLocation={hasLocation}
+          onToggleLocation={onToggleLocation}
+          activeFilters={activeFilters}
+          onOpenFilters={() => setSheetOpen(true)}
+        />
 
-        <div className="flex items-center justify-between w-full md:w-auto gap-4 pl-2">
-          <div className="flex items-center gap-2">
-            <ToggleStationType
-              isMarine={filters.isMarine}
-              onToggle={handleToggleMarine}
-            />
+        <div className="mt-2">
+          <FavoriteChips
+            favorites={favorites}
+            pinnedId={pinnedId}
+            current={currentSnapshot}
+            onApply={onApplySearch}
+            onSaveCurrent={onSaveCurrent}
+          />
+        </div>
+      </div>
 
-            <div className="flex items-center gap-2 md:hidden">
-              <LocationFilter setLocation={setLocation} location={location} />
+      <FiltersSheet
+        open={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        resultsCount={resultsCount}
+        onResetFilters={onResetFilters}
+        favorites={favorites}
+        pinnedId={pinnedId}
+        onApplySearch={onApplySearch}
+        onRenameSearch={onRenameSearch}
+        onRemoveSearch={onRemoveSearch}
+        onTogglePin={onTogglePin}
+        onSaveCurrent={onSaveCurrent}
+        {...fieldsProps}
+      />
+
+      {/* Escritorio */}
+      <div className="hidden md:block sticky top-4 z-50 px-4 mb-10">
+        <div className="max-w-6xl mx-auto bg-base-100/90 backdrop-blur-xl shadow-lg shadow-base-content/5 border border-base-300 rounded-2xl divide-y divide-base-300">
+          <div className="flex items-center gap-3 px-4 py-3">
+            <div className="flex items-center gap-2 shrink-0">
+              <LocationFilter
+                status={locationStatus}
+                hasLocation={hasLocation}
+                onToggle={onToggleLocation}
+              />
+              <ToggleStationType
+                isMarine={filters.isMarine}
+                onToggle={onToggleMarine}
+              />
             </div>
+
+            <div className="h-6 w-px bg-base-300 shrink-0" aria-hidden />
+
+            <FiltersFields layout="row" {...fieldsProps} />
           </div>
-          <label
-            htmlFor="mobile-menu-toggle"
-            className="btn btn-ghost btn-sm btn-circle text-base-content/70 md:hidden cursor-pointer"
+
+          <div className="px-4 py-2">
+            <FavoriteChips
+              favorites={favorites}
+              pinnedId={pinnedId}
+              current={currentSnapshot}
+              onApply={onApplySearch}
+              onSaveCurrent={onSaveCurrent}
+            />
+          </div>
+        </div>
+      </div>
+
+      {locationError && (
+        <div className="px-4 mb-4">
+          <div
+            role="status"
+            className="max-w-6xl mx-auto rounded-xl border border-base-300 bg-base-100 px-4 py-2.5 text-sm flex items-center gap-2"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5"
               fill="none"
               viewBox="0 0 24 24"
+              strokeWidth={1.5}
               stroke="currentColor"
+              className="size-5 shrink-0 text-base-content/60"
+              aria-hidden="true"
             >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                strokeWidth="2"
-                d="M4 6h16M4 12h16M4 18h7"
+                d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z"
               />
             </svg>
-          </label>
-        </div>
-
-        <input
-          type="checkbox"
-          id="mobile-menu-toggle"
-          className="peer hidden"
-        />
-
-        <div
-          className="
-              hidden peer-checked:flex md:!flex
-              flex-col md:flex-row flex-wrap items-center justify-center gap-3
-              w-full md:w-auto absolute md:relative top-[110%] md:top-auto
-              left-0 right-0 p-5 md:p-0 bg-base-100 md:bg-transparent
-              shadow-2xl md:shadow-none rounded-2xl md:rounded-none
-              border border-base-300 md:border-none z-50
-            "
-        >
-          <div className="hidden md:block">
-            <LocationFilter setLocation={setLocation} location={location} />
+            <span className="text-base-content/80">{locationError}</span>
           </div>
-
-          <SelectFilter
-            placeholder="Comunidad Autónoma"
-            value={filters.community}
-            onChange={handleCommunityChange}
-            isLoading={loaders.isLoadingCommunities}
-            options={options.communities}
-          />
-
-          <SelectFilter
-            placeholder="Provincia"
-            value={filters.province}
-            onChange={handleProvinceChange}
-            isLoading={loaders.isLoadingProvinces}
-            disabled={!filters.community}
-            options={options.provinces}
-          />
-
-          <SelectFilter
-            placeholder="Municipio"
-            value={filters.municipality}
-            onChange={(val) => onChange({ municipality: val })}
-            isLoading={loaders.isLoadingMunicipalities}
-            disabled={!filters.province}
-            options={options.municipalities}
-          />
-
-          <SelectFilter
-            placeholder="Combustible"
-            value={filters.petrol}
-            onChange={(val) => onChange({ petrol: val })}
-            isLoading={loaders.isLoadingPetrols}
-            options={options.petrols}
-          />
-          { !filters.isMarine &&
-            <div className="items-center w-full md:w-auto flex gap-6 px-2">
-              <span className="text-sm md:hidden">Fecha:</span>
-              <DatePicker date={date} setDate={setDate} onChange={onChange} />
-            </div>}
         </div>
-      </div>
-    </div>
+      )}
+    </>
   );
 };

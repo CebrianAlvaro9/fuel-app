@@ -1,48 +1,53 @@
+import { useMemo } from "react";
 import { DayPicker } from "react-day-picker";
+import { formatApiDate, parseApiDate } from "../../helpers/dateFormat";
 
 export interface DatePickerProps {
+  /** Fecha en formato de la API (`dd-mm-yyyy`), o "" si no hay ninguna. */
+  value: string;
   onChange: (value: { date: string }) => void;
-  date: Date | undefined;
-  setDate: React.Dispatch<React.SetStateAction<Date | undefined>>;
 }
 
-export const DatePicker = ({ onChange, date, setDate }: DatePickerProps) => {
+/**
+ * La fecha se deriva de `value` en vez de duplicarse en estado local: así
+ * aplicar una búsqueda guardada actualiza el calendario sin sincronización
+ * manual.
+ */
+export const DatePicker = ({ value, onChange }: DatePickerProps) => {
+  const date = useMemo(() => parseApiDate(value), [value]);
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const formatDate = (date: Date): string => {
-    const day = String(date.getDate()).padStart(2, "0");
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const year = date.getFullYear();
-    return `${day}-${month}-${year}`;
-  };
-
-  const handleDateChange = (value: Date | undefined) => {
-    setDate(value);
-    if (value) {
-      const formattedDate = formatDate(value);
-      onChange({ date: formattedDate });
-    } else {
-      onChange({ date: "" });
-    }
+  const handleDateChange = (next: Date | undefined) => {
+    onChange({ date: next ? formatApiDate(next) : "" });
   };
 
   const resetDate = (event: React.MouseEvent) => {
     event.preventDefault();
-    setDate(undefined);
+    event.stopPropagation();
     onChange({ date: "" });
   };
+
   return (
     <div>
       <button
+        type="button"
         popoverTarget="rdp-popover"
-        className="input  w-full h-auto md:w-auto p-1 focus:bg-base-100 disabled:opacity-50 transition-all cursor-pointer  text-sm rounded-xl flex items-center justify-center gap-2"
+        aria-label={date ? `Fecha: ${value}` : "Elegir fecha"}
+        className="input w-full h-auto md:w-auto p-1 focus:bg-base-100 disabled:opacity-50 transition-all cursor-pointer text-sm rounded-xl flex items-center justify-center gap-2"
         style={{ anchorName: "--rdp" } as React.CSSProperties}
       >
         {date ? (
           <span className="px-2 flex items-center gap-2">
-            {formatDate(date)}{" "}
-            <span className="cursor-pointer text-xs" onClick={resetDate}>
+            {value}
+            <span
+              role="button"
+              tabIndex={0}
+              aria-label="Quitar fecha"
+              className="cursor-pointer text-xs"
+              onClick={resetDate}
+            >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
@@ -50,6 +55,7 @@ export const DatePicker = ({ onChange, date, setDate }: DatePickerProps) => {
                 strokeWidth={2}
                 stroke="currentColor"
                 className="size-4"
+                aria-hidden="true"
               >
                 <path
                   strokeLinecap="round"
@@ -67,6 +73,7 @@ export const DatePicker = ({ onChange, date, setDate }: DatePickerProps) => {
             strokeWidth={1.5}
             stroke="currentColor"
             className="size-6"
+            aria-hidden="true"
           >
             <path
               strokeLinecap="round"

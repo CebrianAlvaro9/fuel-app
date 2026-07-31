@@ -1,4 +1,68 @@
 @import "tailwindcss";
-@plugin "daisyui" {
-  themes: light --default, dark --prefersdark, fantasy;
+@plugin "daisyui";
+
+/* Paleta monocroma: todo en escala de grises, sin acentos de color. */
+@plugin "daisyui/theme" {
+  name: "mono";
+  default: true;
+  prefersdark: false;
+  color-scheme: light;
+
+  --color-base-100: oklch(100% 0 0);
+  --color-base-200: oklch(97% 0 0);
+  --color-base-300: oklch(92% 0 0);
+  --color-base-content: oklch(18% 0 0);
+
+  --color-primary: oklch(18% 0 0);
+  --color-primary-content: oklch(100% 0 0);
+  --color-secondary: oklch(45% 0 0);
+  --color-secondary-content: oklch(100% 0 0);
+  --color-accent: oklch(32% 0 0);
+  --color-accent-content: oklch(100% 0 0);
+  --color-neutral: oklch(22% 0 0);
+  --color-neutral-content: oklch(100% 0 0);
+
+  --color-info: oklch(48% 0 0);
+  --color-info-content: oklch(100% 0 0);
+  --color-success: oklch(42% 0 0);
+  --color-success-content: oklch(100% 0 0);
+  --color-warning: oklch(38% 0 0);
+  --color-warning-content: oklch(100% 0 0);
+  --color-error: oklch(30% 0 0);
+  --color-error-content: oklch(100% 0 0);
+
+  --radius-selector: 0.75rem;
+  --radius-field: 0.75rem;
+  --radius-box: 1.25rem;
+
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.fade-in {
+  animation: fade-in 0.25s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-in {
+    animation: none;
+  }
 }
