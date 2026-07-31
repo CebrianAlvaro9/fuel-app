@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import * as L from "leaflet";
-import "leaflet.markercluster";
+import type * as LeafletTypes from "leaflet";
+import { assertClusterPlugin, L } from "./leaflet";
 import "leaflet/dist/leaflet.css";
 // Solo la hoja base (animaciones y patas de la araña). `MarkerCluster.Default.css`
 // trae las burbujas verdes y amarillas, que romperían el monocromo.
@@ -48,13 +48,13 @@ export const StationsMap = ({
   favoritesCollapsed,
 }: StationsMapProps) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const mapRef = useRef<L.Map | null>(null);
-  const clusterLayerRef = useRef<L.MarkerClusterGroup | null>(null);
+  const mapRef = useRef<LeafletTypes.Map | null>(null);
+  const clusterLayerRef = useRef<LeafletTypes.MarkerClusterGroup | null>(null);
   // La más barata vive fuera del grupo: es la respuesta que se viene a buscar,
   // así que nunca debe quedar escondida dentro de una burbuja.
-  const bestLayerRef = useRef<L.LayerGroup | null>(null);
-  const circleRef = useRef<L.Circle | null>(null);
-  const userMarkerRef = useRef<L.Marker | null>(null);
+  const bestLayerRef = useRef<LeafletTypes.LayerGroup | null>(null);
+  const circleRef = useRef<LeafletTypes.Circle | null>(null);
+  const userMarkerRef = useRef<LeafletTypes.Marker | null>(null);
 
   const [visibleCount, setVisibleCount] = useState(MAP_MARKERS_INITIAL);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -72,6 +72,8 @@ export const StationsMap = ({
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
+
+    assertClusterPlugin();
 
     const map = L.map(el).setView(
       [initialLocationRef.current.latitude, initialLocationRef.current.longitude],
@@ -130,7 +132,7 @@ export const StationsMap = ({
     const map = mapRef.current;
     if (!map) return;
 
-    const latlng: L.LatLngExpression = [location.latitude, location.longitude];
+    const latlng: LeafletTypes.LatLngExpression = [location.latitude, location.longitude];
 
     if (!userMarkerRef.current) {
       userMarkerRef.current = createUserMarker(latlng).addTo(map);
@@ -175,7 +177,7 @@ export const StationsMap = ({
     bestLayer.clearLayers();
 
     const visible = priced.slice(0, Math.min(visibleCount, priced.length));
-    const batch: L.Marker[] = [];
+    const batch: LeafletTypes.Marker[] = [];
     let bestAssigned = false;
 
     visible.forEach((station) => {
