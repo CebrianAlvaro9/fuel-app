@@ -9,7 +9,7 @@ export default defineConfig({
     babel({ presets: [reactCompilerPreset()] }),
     tailwindcss()
   ],
-  base: 'fuel-app',
+  base: '/fuel-app/',
   server: {
     // host: true expone el servidor en la LAN para probar desde el móvil.
     host: true,

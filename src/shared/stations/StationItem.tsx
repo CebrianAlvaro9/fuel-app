@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { getAvailableFuels } from "../../helpers/stationFuel";
 import { getStationCoords } from "../../helpers/stationsModifiers";
+import { buildDirectionsUrl } from "../../helpers/mapsLinks";
 import type { AnyStation, MaritimeStationPrice } from "../../models/stations.model";
 
 interface StationCardProps {
@@ -29,9 +30,7 @@ export const StationCard = ({ station, type }: StationCardProps) => {
     : availableFuels.slice(0, VISIBLE_FUELS);
   const hiddenCount = availableFuels.length - visibleFuels.length;
 
-  const mapsUrl = coords
-    ? `https://www.google.com/maps/search/?api=1&query=${coords.lat},${coords.lon}`
-    : null;
+  const mapsUrl = coords ? buildDirectionsUrl(coords) : null;
 
   return (
     <div

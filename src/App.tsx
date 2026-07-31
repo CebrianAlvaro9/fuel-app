@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Filters } from "./shared/filters/FiltersNavBar";
-import { StationsList } from "./shared/stations/StationsList";
+import {
+  StationsSection,
+  type StationsView,
+} from "./shared/stations/StationsSection";
 import { SaveSearchModal } from "./shared/favorites/SaveSearchModal";
 
 import type { FilterState } from "./models/filters.model";
@@ -10,6 +13,7 @@ import { useStationsData } from "./hooks/useStationsData";
 import { useGeolocation } from "./hooks/useGeolocation";
 import { useFavorites } from "./hooks/useFavorites";
 import { useSearchLabels } from "./hooks/useSearchLabels";
+import { useScrolled } from "./hooks/useScrolled";
 import {
   getPinnedSearch,
   readFavoritesStore,
@@ -54,6 +58,15 @@ function App() {
     bootstrap?.usesLocation ? "nearby" : "zone",
   );
   const [saveModalOpen, setSaveModalOpen] = useState(false);
+  const [resultsView, setResultsView] = useState<StationsView>("list");
+
+  /*
+   * En el mapa el alto es lo escaso: al bajar se pliegan los favoritos y el
+   * mapa gana ese sitio. Vive aquí y no en la barra porque los dos lados
+   * necesitan el mismo valor para que sus alturas se compensen.
+   */
+  const scrolled = useScrolled();
+  const favoritesCollapsed = resultsView === "map" && scrolled;
 
   const {
     location,
@@ -175,19 +188,24 @@ function App() {
         onRemoveSearch={favorites.remove}
         onTogglePin={favorites.togglePin}
         onSaveCurrent={() => setSaveModalOpen(true)}
+        favoritesCollapsed={favoritesCollapsed}
       />
 
       <main className="container mx-auto px-4 max-w-6xl space-y-8">
-        <StationsList
+        <StationsSection
           loading={isLoading}
           error={error}
           stations={stations}
           isMarine={filters.isMarine}
-          hasLocation={Boolean(location)}
+          location={location}
           radiusKm={radiusKm}
           onRadiusChange={setRadiusKm}
           onResetFilters={resetFilters}
           sortedByPrice={Boolean(filters.petrol)}
+          petrolLabel={labels.petrol}
+          view={resultsView}
+          onViewChange={setResultsView}
+          favoritesCollapsed={favoritesCollapsed}
         />
       </main>
 

@@ -33,6 +33,8 @@ interface FiltersProps {
   onRemoveSearch: (id: string) => void;
   onTogglePin: (id: string) => void;
   onSaveCurrent: () => void;
+  /** Pliega la fila de favoritos en escritorio para dejar sitio al mapa. */
+  favoritesCollapsed: boolean;
 }
 
 export const Filters = ({
@@ -57,6 +59,7 @@ export const Filters = ({
   onRemoveSearch,
   onTogglePin,
   onSaveCurrent,
+  favoritesCollapsed,
 }: FiltersProps) => {
   const [sheetOpen, setSheetOpen] = useState(false);
   const activeFilters = countActiveFilters(filters, searchMode === "nearby");
@@ -132,14 +135,26 @@ export const Filters = ({
             <FiltersFields layout="row" {...fieldsProps} />
           </div>
 
-          <div className="px-4 py-2">
-            <FavoriteChips
-              favorites={favorites}
-              pinnedId={pinnedId}
-              current={currentSnapshot}
-              onApply={onApplySearch}
-              onSaveCurrent={onSaveCurrent}
-            />
+          {/* `grid-rows-[0fr/1fr]` permite animar el plegado sin fijar una
+              altura a mano; `invisible` lo saca del foco al estar plegado. */}
+          <div
+            className={`grid transition-all duration-200 ease-out ${
+              favoritesCollapsed
+                ? "grid-rows-[0fr] opacity-0 invisible border-transparent"
+                : "grid-rows-[1fr] opacity-100"
+            }`}
+          >
+            <div className="overflow-hidden">
+              <div className="px-4 py-2">
+                <FavoriteChips
+                  favorites={favorites}
+                  pinnedId={pinnedId}
+                  current={currentSnapshot}
+                  onApply={onApplySearch}
+                  onSaveCurrent={onSaveCurrent}
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>
