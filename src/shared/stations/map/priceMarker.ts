@@ -4,6 +4,17 @@ interface PriceMarkerOptions {
   price: string;
   name: string;
   isBest: boolean;
+  /** Numérico, para que el grupo pueda calcular el mínimo de sus hijos. */
+  priceValue: number;
+}
+
+/**
+ * Leaflet permite ampliar las opciones de un marcador, y es donde se cuelga el
+ * precio: así el icono del grupo puede leer el de cada hijo sin mantener un
+ * mapa aparte que habría que sincronizar al reconstruir los marcadores.
+ */
+export interface StationMarkerOptions extends L.MarkerOptions {
+  priceValue: number;
 }
 
 /**
@@ -14,7 +25,7 @@ interface PriceMarkerOptions {
  */
 export const createPriceMarker = (
   coords: L.LatLngExpression,
-  { price, name, isBest }: PriceMarkerOptions,
+  { price, name, isBest, priceValue }: PriceMarkerOptions,
 ): L.Marker => {
   const container = document.createElement("div");
   container.className = isBest ? "fuel-marker fuel-marker--best" : "fuel-marker";
@@ -42,7 +53,49 @@ export const createPriceMarker = (
 
   // Leaflet ordena por latitud: sin esto una etiqueta puede quedar enterrada
   // bajo otra que esté geográficamente más al norte.
-  return L.marker(coords, { icon, zIndexOffset: 1000 });
+  return L.marker(coords, {
+    icon,
+    zIndexOffset: 1000,
+    priceValue,
+  } as StationMarkerOptions);
+};
+
+/**
+ * Icono de un grupo de gasolineras. Muestra el **precio más bajo** que contiene
+ * y no solo cuántas hay: agrupar sirve para que el mapa se lea, pero perder de
+ * vista el precio dejaría el mapa sin lo único que se viene a mirar.
+ */
+export const createClusterIcon = (cluster: {
+  getAllChildMarkers: () => L.Marker[];
+  getChildCount: () => number;
+}): L.DivIcon => {
+  const prices = cluster
+    .getAllChildMarkers()
+    .map((marker) => (marker.options as StationMarkerOptions).priceValue)
+    .filter((value) => Number.isFinite(value));
+
+  const container = document.createElement("div");
+  container.className = "fuel-cluster";
+
+  const priceEl = document.createElement("span");
+  priceEl.className = "fuel-cluster__price";
+  priceEl.textContent =
+    prices.length > 0
+      ? `${Math.min(...prices).toFixed(3).replace(".", ",")} €`
+      : "—";
+
+  const countEl = document.createElement("span");
+  countEl.className = "fuel-cluster__count";
+  countEl.textContent = `${cluster.getChildCount()} gasolineras`;
+
+  container.append(priceEl, countEl);
+
+  return L.divIcon({
+    html: container,
+    className: "",
+    iconSize: [78, 44],
+    iconAnchor: [39, 44],
+  });
 };
 
 /** Marcador de la posición del usuario: un punto sólido, sin etiqueta. */
