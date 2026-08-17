@@ -6,6 +6,7 @@ import { MapErrorBoundary } from "./MapErrorBoundary";
 import { mapContainerClasses } from "./map/mapLayout";
 import type { StationsFromApi } from "../../models/stations.model";
 import type { Coords } from "../../models/ubi.model";
+import type { FilterState } from "../../models/filters.model";
 
 // A nivel de módulo, nunca dentro del componente: un `lazy()` por render
 // recrea el tipo y remonta el mapa en cada render.
@@ -20,14 +21,17 @@ interface StationsSectionProps {
   error: Error | null;
   stations: StationsFromApi | undefined;
   isMarine: boolean;
+  filters: FilterState;
+  /** Único combustible que habilita el mapa: ya no depende de la ubicación. */
+  canShowMap: boolean;
   location: Coords | null;
   radiusKm: number;
   onRadiusChange: (km: number) => void;
   onResetFilters: () => void;
   sortedByPrice: boolean;
   petrolLabel?: string;
-  /* Controlado desde `App` porque la barra de filtros también necesita saber
-     si estamos en el mapa, para encogerse al hacer scroll. */
+  /* `App` ya resuelve si la vista activa puede ser "map" (según
+     `canShowMap`), así que aquí `view` llega siempre lista para pintar. */
   view: StationsView;
   onViewChange: (view: StationsView) => void;
   favoritesCollapsed: boolean;
@@ -45,6 +49,8 @@ export const StationsSection = ({
   error,
   stations,
   isMarine,
+  filters,
+  canShowMap,
   location,
   radiusKm,
   onRadiusChange,
@@ -58,37 +64,22 @@ export const StationsSection = ({
   isFetching,
 }: StationsSectionProps) => {
   const hasLocation = Boolean(location);
-  const hasResults = Boolean(stations && stations.ListaEESSPrecio.length > 0);
-
-  // Derivado, no efecto: si se quita el combustible estando en el mapa, se
-  // vuelve a la lista sin render intermedio. `mapReady` además estrecha los
-  // tipos, así que no hacen falta aserciones `!` al pasar `stations` y
-  // `location` al mapa.
-  const mapReady =
-    stations && stations.ListaEESSPrecio.length > 0 && location && sortedByPrice;
-  const activeView: StationsView = mapReady ? view : "list";
 
   return (
     <>
-      {/* El conmutador solo se pinta cuando hay resultados, de modo que
-          `StationsList` sigue siendo el único dueño del spinner, del error y
-          de `EmptyResults`. */}
-      {/* El botón de actualizar se pinta aunque no haya resultados: si una
-          búsqueda vino vacía o falló, es justo cuando hace falta reintentar. */}
+      {/* El conmutador se pinta siempre que no esté cargando, también con la
+          lista vacía: con navegación libre por el mapa es justo cuando más
+          sirve. El botón de actualizar igual: si una búsqueda vino vacía o
+          falló, es justo cuando hace falta reintentar. */}
       {!loading && (
         /* `items-start`: la pista bajo el conmutador hace el bloque de dos
            líneas, y centrar dejaba el botón descolgado respecto a las pestañas. */
         <div className="flex items-start justify-between gap-3">
-          {hasResults ? (
-            <StationsViewToggle
-              view={activeView}
-              onChange={onViewChange}
-              hasLocation={hasLocation}
-              hasFuel={sortedByPrice}
-            />
-          ) : (
-            <span />
-          )}
+          <StationsViewToggle
+            view={view}
+            onChange={onViewChange}
+            hasFuel={canShowMap}
+          />
 
           <RefreshButton
             onRefresh={onRefresh}
@@ -98,16 +89,16 @@ export const StationsSection = ({
         </div>
       )}
 
-      {activeView === "map" && mapReady ? (
+      {view === "map" ? (
         // El `fallback` comparte con el mapa real la constante de altura
-        // (`MAP_CONTAINER_CLASSES`), así que cargar el chunk diferido no da
+        // (`mapContainerClasses`), así que cargar el chunk diferido no da
         // salto de layout.
         <MapErrorBoundary onBackToList={() => onViewChange("list")}>
           <Suspense
             fallback={<div className={mapContainerClasses(favoritesCollapsed)} />}
           >
             <StationsMap
-              stations={stations}
+              filters={filters}
               location={location}
               radiusKm={radiusKm}
               petrolLabel={petrolLabel}

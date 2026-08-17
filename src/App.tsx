@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Filters } from "./shared/filters/FiltersNavBar";
 import {
   StationsSection,
@@ -60,13 +61,7 @@ function App() {
   const [saveModalOpen, setSaveModalOpen] = useState(false);
   const [resultsView, setResultsView] = useState<StationsView>("list");
 
-  /*
-   * En el mapa el alto es lo escaso: al bajar se pliegan los favoritos y el
-   * mapa gana ese sitio. Vive aquí y no en la barra porque los dos lados
-   * necesitan el mismo valor para que sus alturas se compensen.
-   */
-  const scrolled = useScrolled();
-  const favoritesCollapsed = resultsView === "map" && scrolled;
+  const queryClient = useQueryClient();
 
   const {
     location,
@@ -81,6 +76,23 @@ function App() {
   const filters = isMarine ? marineFilters : landFilters;
   const setFilters = isMarine ? setMarineFilters : setLandFilters;
   const labels = useSearchLabels(filters);
+
+  /*
+   * Única verdad sobre si el mapa se puede mostrar: el combustible. Antes
+   * `resultsView` (aquí) y la derivación interna de `StationsSection`
+   * podían divergir (una decía "map", la otra "list" por falta de
+   * ubicación); ahora solo existe esta.
+   */
+  const canShowMap = Boolean(filters.petrol);
+  const activeView: StationsView = canShowMap ? resultsView : "list";
+
+  /*
+   * En el mapa el alto es lo escaso: al bajar se pliegan los favoritos y el
+   * mapa gana ese sitio. Vive aquí y no en la barra porque los dos lados
+   * necesitan el mismo valor para que sus alturas se compensen.
+   */
+  const scrolled = useScrolled();
+  const favoritesCollapsed = activeView === "map" && scrolled;
 
   /*
    * La ubicación sí se pide en un efecto: es asíncrona, pero no afecta al
@@ -156,7 +168,7 @@ function App() {
     [filters, radiusKm, searchMode, labels],
   );
 
-  const { stations, isLoading, isFetching, error, refetch } = useStationsData(
+  const { stations, isLoading, isFetching, error } = useStationsData(
     filters,
     location,
     radiusKm,
@@ -166,11 +178,16 @@ function App() {
    * Rehace la búsqueda entera, no solo la petición: si se está buscando por
    * cercanía se vuelve a pedir la posición, porque tras un rato en marcha lo
    * más probable es que ya no estés donde estabas.
+   *
+   * `invalidateQueries` y no el `refetch` de la lista: ese `refetch` solo
+   * toca la entrada de la lista, y en vista mapa el botón parecería no hacer
+   * nada. Invalidar por prefijo `["stations"]` alcanza a las dos entradas
+   * (lista y nacional) sin importar en cuál se pulse.
    */
   const refreshSearch = useCallback(() => {
-    refetch();
+    queryClient.invalidateQueries({ queryKey: ["stations"] });
     if (searchMode === "nearby") requestLocation();
-  }, [refetch, searchMode, requestLocation]);
+  }, [queryClient, searchMode, requestLocation]);
 
   const resultsCount = stations?.ListaEESSPrecio.length ?? 0;
 
@@ -207,13 +224,15 @@ function App() {
           error={error}
           stations={stations}
           isMarine={filters.isMarine}
+          filters={filters}
+          canShowMap={canShowMap}
           location={location}
           radiusKm={radiusKm}
           onRadiusChange={setRadiusKm}
           onResetFilters={resetFilters}
-          sortedByPrice={Boolean(filters.petrol)}
+          sortedByPrice={canShowMap}
           petrolLabel={labels.petrol}
-          view={resultsView}
+          view={activeView}
           onViewChange={setResultsView}
           favoritesCollapsed={favoritesCollapsed}
           onRefresh={refreshSearch}

@@ -10,13 +10,16 @@ export default defineConfig({
     babel({ presets: [reactCompilerPreset()] }),
     tailwindcss(),
     /*
-     * HTTPS con certificado autofirmado para dev y preview. No afecta al build.
-     * Es imprescindible para probar desde el móvil por la LAN: la
-     * geolocalización solo funciona en contexto seguro, y por http://192.168.x.x
-     * falla en silencio en iOS y Android — con lo que el mapa, que depende de
-     * tener ubicación, no se puede ni abrir.
+     * HTTPS con certificado autofirmado, solo bajo demanda: `HTTPS=1 npm run dev`.
+     *
+     * Hace falta para probar desde el móvil por la LAN, porque la
+     * geolocalización solo funciona en contexto seguro y por http://192.168.x.x
+     * falla en silencio en iOS y Android. Pero forzarlo siempre obliga a pasar
+     * por el aviso de certificado en cada herramienta que abra la app en local,
+     * y desde que el mapa navega libre sin ubicación ya no es la vía normal de
+     * trabajo. No afecta al build.
      */
-    basicSsl(),
+    ...(process.env.HTTPS ? [basicSsl()] : []),
   ],
   base: '/fuel-app/',
   server: {

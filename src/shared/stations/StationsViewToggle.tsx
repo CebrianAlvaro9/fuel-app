@@ -3,7 +3,6 @@ type StationsView = "list" | "map";
 interface StationsViewToggleProps {
   view: StationsView;
   onChange: (view: StationsView) => void;
-  hasLocation: boolean;
   hasFuel: boolean;
 }
 
@@ -15,19 +14,20 @@ const OPTIONS: { value: StationsView; label: string }[] = [
 /**
  * Deshabilitado con pista, no oculto: ocultarlo haría el mapa indescubrible
  * justo para quien no cumple la condición.
+ *
+ * La única condición es el combustible: las etiquetas del mapa necesitan
+ * `PrecioProducto`, que la API solo devuelve con un `producto` en la URL. Ya
+ * no depende de la ubicación, el mapa navega libre por toda España.
  */
 export const StationsViewToggle = ({
   view,
   onChange,
-  hasLocation,
   hasFuel,
 }: StationsViewToggleProps) => {
-  const mapDisabled = !hasLocation || !hasFuel;
-  const hint = !hasLocation
-    ? "Activa tu ubicación para ver el mapa"
-    : !hasFuel
-      ? "Elige un combustible para ver los precios en el mapa"
-      : null;
+  const mapDisabled = !hasFuel;
+  const hint = mapDisabled
+    ? "Elige un combustible para ver los precios en el mapa"
+    : null;
 
   // Ancho acotado, no `w-full`: dentro de la fila con el botón de actualizar,
   // estirarse dejaba un hueco raro entre ambos. El espaciado inferior lo

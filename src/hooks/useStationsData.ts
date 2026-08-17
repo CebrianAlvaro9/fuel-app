@@ -1,10 +1,7 @@
 import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
 import type { FilterState } from "../models/filters.model";
-import { getLandStations } from "../apis/stations.api";
-import type { StationsFromApi } from "../models/stations.model";
-import { buildStationsEndpoint } from "../helpers/endpointBuilder";
 import type { Coords } from "../models/ubi.model";
+import { useStationsQuery } from "./useStationsQuery";
 import {
   filterByRadius,
   mapAndSortByDistance,
@@ -12,26 +9,18 @@ import {
 } from "../helpers/stationsModifiers";
 
 /**
- * `location` y `radiusKm` se quedan deliberadamente fuera de `queryKey`: el
- * endpoint solo depende de `filters`, así que incluirlos provocaría un refetch
- * de ~11.000 estaciones en cada tick del slider.
+ * `location` y `radiusKm` se quedan deliberadamente fuera de la clave de la
+ * consulta (ver `useStationsQuery`): el endpoint solo depende de `filters`,
+ * así que incluirlos provocaría un refetch de ~11.000 estaciones en cada
+ * tick del slider.
  */
 export const useStationsData = (
   filters: FilterState,
   location: Coords | null,
   radiusKm: number,
 ) => {
-  const endpoint = buildStationsEndpoint(filters);
-
-  const { data, isLoading, isFetching, error, refetch } = useQuery({
-    queryKey: ["stations", filters],
-    queryFn: async () => {
-      const [data, err] = await getLandStations(endpoint);
-      if (err) throw new Error(err.message);
-      return data as StationsFromApi;
-    },
-    staleTime: 1000 * 60 * 15,
-  });
+  const { data, isLoading, isFetching, error, refetch } =
+    useStationsQuery(filters);
 
   // O(n log n): solo cuando cambian los datos o la posición del usuario.
   const withDistance = useMemo(
