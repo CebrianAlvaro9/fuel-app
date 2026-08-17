@@ -4,9 +4,12 @@ export const MIN_RADIUS_KM = 1;
 export const MAX_RADIUS_KM = 50;
 export const DEFAULT_RADIUS_KM = 10;
 
-export const MAP_MARKERS_INITIAL = 50;
-export const MAP_MARKERS_STEP = 50;
-export const MAP_MARKERS_MAX = 200;
+/** Las más baratas del encuadre visible que se pintan a la vez. */
+export const MAP_VIEWPORT_MARKERS = 100;
+/** Rebote del recálculo de encuadre en `moveend`/`zoomend`. */
+export const MAP_VIEWPORT_DEBOUNCE_MS = 150;
+/** Rebote del guardado de cámara (centro + zoom) en localStorage. */
+export const MAP_VIEW_SAVE_DEBOUNCE_MS = 500;
 
 /*
  * La API sirve una única lista de 31 productos para los dos tipos de estación,

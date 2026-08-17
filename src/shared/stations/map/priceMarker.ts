@@ -18,16 +18,26 @@ export interface StationMarkerOptions extends LeafletTypes.MarkerOptions {
   priceValue: number;
 }
 
+export interface PriceIconOptions {
+  price: string;
+  name: string;
+  isBest: boolean;
+}
+
 /**
  * Construido con DOM, no interpolando cadenas: `station["Rótulo"]` viene de
  * la API, y `DivIcon.createIcon` acepta un `Element` y lo añade tal cual en
  * vez de asignarlo a `innerHTML`. Con `textContent` la inyección es
  * estructuralmente imposible, sin tener que acordarse de escapar nada.
+ *
+ * Extraído de `createPriceMarker` para poder reestilar el intercambio de
+ * "la más barata" con `setIcon` en vez de recrear el marcador entero.
  */
-export const createPriceMarker = (
-  coords: LeafletTypes.LatLngExpression,
-  { price, name, isBest, priceValue }: PriceMarkerOptions,
-): LeafletTypes.Marker => {
+export const createPriceIcon = ({
+  price,
+  name,
+  isBest,
+}: PriceIconOptions): LeafletTypes.DivIcon => {
   const container = document.createElement("div");
   container.className = isBest ? "fuel-marker fuel-marker--best" : "fuel-marker";
 
@@ -41,7 +51,7 @@ export const createPriceMarker = (
 
   container.append(priceEl, nameEl);
 
-  const icon = L.divIcon({
+  return L.divIcon({
     html: container,
     // El valor por defecto es "leaflet-div-icon", que pinta un recuadro
     // blanco con borde alrededor de cada etiqueta.
@@ -51,6 +61,13 @@ export const createPriceMarker = (
     iconSize: [86, 46],
     iconAnchor: [43, 46],
   });
+};
+
+export const createPriceMarker = (
+  coords: LeafletTypes.LatLngExpression,
+  { price, name, isBest, priceValue }: PriceMarkerOptions,
+): LeafletTypes.Marker => {
+  const icon = createPriceIcon({ price, name, isBest });
 
   // Leaflet ordena por latitud: sin esto una etiqueta puede quedar enterrada
   // bajo otra que esté geográficamente más al norte.
